@@ -6,6 +6,11 @@
 - [Lecture Videos](https://www.youtube.com/playlist?list=PL7rtKJAz_mPdFDJtufKmqfWRNu55s_LMc)
 - [Labs](https://github.com/f1tenth/f1tenth_labs_openrepo)
 
+## Git and Docker
+- [Git Docs](https://git-scm.com/docs)
+- [Git and GitHub Tutorial](https://www.w3schools.com/git/default.asp?remote=github)
+- [Docker Docs](https://docs.docker.com/reference/)
+
 ## Simulation (F1TENTH gym environment ROS2 communication bridge)
 - [Simulation](https://github.com/f1tenth/f1tenth_gym_ros)
 
