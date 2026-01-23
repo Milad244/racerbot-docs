@@ -1,7 +1,7 @@
 # Documentation
 
-## Roboracer
-- [Roboracer](https://roboracer.ai/)
+## RoboRacer
+- [RoboRacer](https://roboracer.ai/)
 - [Lectures & Tutorials Material](https://roboracer.ai/course) (In the lectures tab)
 - [Lecture Videos](https://www.youtube.com/playlist?list=PL7rtKJAz_mPdFDJtufKmqfWRNu55s_LMc)
 - [Labs](https://github.com/f1tenth/f1tenth_labs_openrepo)
