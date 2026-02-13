@@ -83,7 +83,7 @@ racerbot_ws/
 The first node will be named `talker.cpp` and needs to meet this criteria:
 - `talker` listens to two ROS parameters `v` and `d`.
 - `talker` publishes an `AckermannDriveStamped` message with the `speed` field equal to the `v` parameter and `steering_angle` field equal to the `d` parameter, and to a topic named `drive`.
-- `talker` publishes every 10ms.
+- `talker` publishes at regular intervals.
 - To test the node, set the two ROS parameters through command line, a launch file, or a yaml file.
 
 The second node will be named `relay.cpp` and needs to meet this criteria:
