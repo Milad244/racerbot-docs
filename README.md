@@ -2,9 +2,10 @@
 
 ## SFU Racerbot
 - [Racerbot](https://github.com/sfu-racerbot)
-- [Lecture & Tutorial Notes](notes)
+- [Official Workspace](https://github.com/sfu-racerbot/racerbot_ws)
 - [Labs](labs)
 - [Resources](resources)
+- [Lecture & Tutorial Notes](notes)
 
 ## UPenn RoboRacer (can be outdated)
 - [RoboRacer](https://roboracer.ai/)
