@@ -47,7 +47,7 @@ public:
                 this->publisher_->publish(msg);
             };
         
-        timer_ = this->create_wall_timer(100ms, timer_callback); // Runs our timer_callback every 100ms
+        timer_ = this->create_wall_timer(10ms, timer_callback); // Runs our timer_callback every 10ms
     }
 private:
     // ROS2 manages life cycle with shared ownership and this avoids memory leaks

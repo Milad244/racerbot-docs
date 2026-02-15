@@ -2,8 +2,10 @@
 
 ## SFU Racerbot
 - [Racerbot](https://github.com/sfu-racerbot)
-- [Lecture & Tutorial Notes](notes)
+- [Official Workspace](https://github.com/sfu-racerbot/racerbot_ws)
 - [Labs](labs)
+- [Resources](resources)
+- [Lecture & Tutorial Notes](notes)
 
 ## UPenn RoboRacer (can be outdated)
 - [RoboRacer](https://roboracer.ai/)
@@ -20,6 +22,7 @@
 - [Docker Docs](https://docs.docker.com/reference/)
 
 ## Simulation (F1TENTH gym environment ROS2 communication bridge)
+- [Instructions](resources/F1TENTH_GYM_ROS.md)
 - [Simulation](https://github.com/f1tenth/f1tenth_gym_ros/tree/dev-humble)
 
 ## ROS 2
