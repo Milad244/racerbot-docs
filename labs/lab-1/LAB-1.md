@@ -17,8 +17,8 @@
     - Navigate to a folder to build your workspace in. Example: `ls` (to see current files) & `cd <folder_you_want_to_go_into>`.
     - Once at your desired folder location, create your workspace directory and src folder: `mkdir -p ./racerbot_ws/src`
     - Go into your workspace: `cd racerbot_ws`
-3. Start the docker container in interactive mode (on the current terminal) with a bind mount to the workspace you just created: `docker run -it -v ./racerbot_ws/src/:/racerbot_ws/src/ --name racerbot_ws ros:humble` (`./` is from your current directory, you could also use the absolute path to your workspace instead)
-    - It is key you understand `-v ./racerbot_ws/src/:/racerbot_ws/src/` **creates a bind mount from your host folder** (`./racerbot_ws/src/`) **to the container folder** (`/racerbot_ws/src/`), so any changes you make on the host or inside the container are immediately reflected in the other.
+3. Start the docker container in interactive mode (on the current terminal) with a bind mount to the workspace you just created: `docker run -it -v ./src/:/racerbot_ws/src/ --name racerbot ros:humble` (`./` is from your current directory, you could also use the absolute path to your workspace instead: `docker run -it -v /full/path/to/racerbot_ws/src/:/racerbot_ws/src/ --name racerbot ros:humble`)
+    - It is key you understand `-v ./src/:/racerbot_ws/src/` **creates a bind mount from your host folder** (`full/path/to/racerbot_ws/src/`) **to the container folder** (`/racerbot_ws/src/`), so any changes you make on the host or inside the container are immediately reflected in the other.
 4. Your terminal is now inside the container you built!
 5. If you close your terminal/container you can re-run it using `docker start -i racerbot_ws`. If you want to delete your container do: `docker rm racerbot_ws`.
 
