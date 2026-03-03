@@ -1,11 +1,13 @@
 # SFU Racerbot Documentation
 
 ## SFU Racerbot
+- [Roadmap](ROADMAP.md)
 - [Racerbot](https://github.com/sfu-racerbot)
 - [Official Workspace](https://github.com/sfu-racerbot/racerbot_ws)
 - [Labs](labs)
 - [Resources](resources)
 - [Lecture & Tutorial Notes](notes)
+- [Contributing](CONTRIBUTING.md)
 
 ## UPenn RoboRacer (can be outdated)
 - [RoboRacer](https://roboracer.ai/)
