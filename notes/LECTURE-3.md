@@ -1,6 +1,6 @@
 # Lecture 3 Notes
 
-**Lecture 3**: https://www.youtube.com/watch?v=XwNsJFcSQx4
+**Lecture 3:** https://www.youtube.com/watch?v=XwNsJFcSQx4
 
 ## State Estimation
 - **Goal:** Determine **where we are in space** and **how we got there**.
@@ -40,7 +40,7 @@
 - **Map frame:** Defines where the robot is relative to a fixed world origin.
 - **Sensor frame:** Defines where obstacles are relative to the sensor.
 - **Measurements in the sensor frame** do **not directly tell you where obstacles are in the map**
-	- Must account for offsets $Δx, Δy, Δz$ from the center of the car.
+	- Must account for offsets $`\Delta x, \Delta y, \Delta z`$ from the center of the car.
 - **Transformations** allow converting measurements **from one frame to another**.
 **Two types of transformations:**
 1. **Static transformations:** Fixed offsets (e.g., sensor mounted on the car).
@@ -97,93 +97,158 @@
 
 ### 1. 2D Rigid Body Transform
 **Standard vector form:**
-$$
+```math
 \mathbf{p}' = R \mathbf{p} + \mathbf{t}
-$$
-$$
+```
+
+```math
 \mathbf{p} =
-\begin{bmatrix} x \\ y \end{bmatrix}, \quad
+\begin{bmatrix}
+x \\
+y
+\end{bmatrix},
+\quad
 \mathbf{p}' =
-\begin{bmatrix} x' \\ y' \end{bmatrix}, \quad
+\begin{bmatrix}
+x' \\
+y'
+\end{bmatrix},
+\quad
 R =
-\begin{bmatrix} 
-\cos\theta & -\sin\theta \\ 
-\sin\theta & \cos\theta 
-\end{bmatrix}, \quad
+\begin{bmatrix}
+\cos\theta & -\sin\theta \\
+\sin\theta & \cos\theta
+\end{bmatrix},
+\quad
 \mathbf{t} =
-\begin{bmatrix} t_x \\ t_y \end{bmatrix}
-$$
-**Homogeneous coordinates form**:
-$$
-\mathbf{P}' = T \mathbf{P}, \quad
-\mathbf{P} =
-\begin{bmatrix} x \\ y \\ 1 \end{bmatrix}, \quad
-\mathbf{P}' =
-\begin{bmatrix} x' \\ y' \\ 1 \end{bmatrix}, \quad
-T =
-\begin{bmatrix} 
-R & \mathbf{t} \\ 
-0 & 1 
-\end{bmatrix} =
-\begin{bmatrix} 
-\cos\theta & -\sin\theta & t_x \\ 
-\sin\theta & \cos\theta & t_y \\ 
-0 & 0 & 1 
+\begin{bmatrix}
+t_x \\
+t_y
 \end{bmatrix}
-$$
+```
+
+**Homogeneous coordinates form:**
+
+```math
+\mathbf{P}' = T \mathbf{P}
+```
+
+```math
+\mathbf{P} =
+\begin{bmatrix}
+x \\
+y \\
+1
+\end{bmatrix},
+\quad
+\mathbf{P}' =
+\begin{bmatrix}
+x' \\
+y' \\
+1
+\end{bmatrix},
+\quad
+T =
+\begin{bmatrix}
+R & \mathbf{t} \\
+0 & 1
+\end{bmatrix}
+=
+\begin{bmatrix}
+\cos\theta & -\sin\theta & t_x \\
+\sin\theta & \cos\theta & t_y \\
+0 & 0 & 1
+\end{bmatrix}
+```
 
 ### 2. 3D Rigid Body Transform
 **Standard vector form:**
-$$
+
+```math
 \mathbf{p}' = R \mathbf{p} + \mathbf{t}
-$$
-$$
+```
+
+```math
 \mathbf{p} =
-\begin{bmatrix} x \\ y \\ z \end{bmatrix}, \quad
+\begin{bmatrix}
+x \\
+y \\
+z
+\end{bmatrix},
+\quad
 \mathbf{p}' =
-\begin{bmatrix} x' \\ y' \\ z' \end{bmatrix}, \quad
+\begin{bmatrix}
+x' \\
+y' \\
+z'
+\end{bmatrix},
+\quad
 R =
-\begin{bmatrix} 
-r_{11} & r_{12} & r_{13} \\ 
-r_{21} & r_{22} & r_{23} \\ 
-r_{31} & r_{32} & r_{33} 
-\end{bmatrix}, \quad
+\begin{bmatrix}
+r_{11} & r_{12} & r_{13} \\
+r_{21} & r_{22} & r_{23} \\
+r_{31} & r_{32} & r_{33}
+\end{bmatrix},
+\quad
 \mathbf{t} =
-\begin{bmatrix} t_x \\ t_y \\ t_z \end{bmatrix}
-$$
-**Homogeneous coordinates form**:
-$$
-\mathbf{P}' = T \mathbf{P}, \quad
-\mathbf{P} =
-\begin{bmatrix} x \\ y \\ z \\ 1 \end{bmatrix}, \quad
-\mathbf{P}' =
-\begin{bmatrix} x' \\ y' \\ z' \\ 1 \end{bmatrix}, \quad
-T =
-\begin{bmatrix} 
-R & \mathbf{t} \\ 
-0 & 1 
-\end{bmatrix} =
-\begin{bmatrix} 
-r_{11} & r_{12} & r_{13} & t_x \\ 
-r_{21} & r_{22} & r_{23} & t_y \\ 
-r_{31} & r_{32} & r_{33} & t_z \\ 
-0 & 0 & 0 & 1 
+\begin{bmatrix}
+t_x \\
+t_y \\
+t_z
 \end{bmatrix}
-$$
+```
+
+**Homogeneous coordinates form:**
+
+```math
+\mathbf{P}' = T \mathbf{P}
+```
+
+```math
+\mathbf{P} =
+\begin{bmatrix}
+x \\
+y \\
+z \\
+1
+\end{bmatrix},
+\quad
+\mathbf{P}' =
+\begin{bmatrix}
+x' \\
+y' \\
+z' \\
+1
+\end{bmatrix},
+\quad
+T =
+\begin{bmatrix}
+R & \mathbf{t} \\
+0 & 1
+\end{bmatrix}
+=
+\begin{bmatrix}
+r_{11} & r_{12} & r_{13} & t_x \\
+r_{21} & r_{22} & r_{23} & t_y \\
+r_{31} & r_{32} & r_{33} & t_z \\
+0 & 0 & 0 & 1
+\end{bmatrix}
+```
 
 ### 3. Additional Notes on Rotation Matrices and Inverses
 - **Rotation matrices $R$** are **orthogonal** and have **determinant 1**, which means they preserve lengths and angles when rotating points.
 - **Why $R^T$ works:** $R^T$ reverses the rotation because the transpose of an orthogonal matrix is also its inverse, so applying $R^T$ “undoes” the original rotation.
 - **Why the inverse translation is $-R^T \mathbf{t}$:** After reversing the rotation with $R^T$, we must also move back by the opposite of the original translation, which becomes $-R^T \mathbf{t}$ in the transformed frame.
 - **Inverse of a rigid body transform $T$**:
-$$
+```math
 T^{-1} =
 \begin{bmatrix}
 R^T & -R^T \mathbf{t} \\
 0 & 1
-\end{bmatrix}, \quad
+\end{bmatrix},
+\quad
 \text{where } R^T \text{ reverses the rotation, and } -R^T \mathbf{t} \text{ reverses the translation.}
-$$
+```
 
 ### Poses & Transformations
 - Points, directions, and displacements are represented by **n-dimensional vectors**.

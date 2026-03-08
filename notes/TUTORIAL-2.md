@@ -1,6 +1,6 @@
 # Tutorial 2 Notes
 
-**Tutorial 2**: https://www.youtube.com/watch?v=eeV9XHYXMlI
+**Tutorial 2:** https://www.youtube.com/watch?v=eeV9XHYXMlI
 
 Not many notes are here as most of the tutorial will be covered in the simulation `README` and the lab instructions.
 

@@ -1,6 +1,6 @@
 # Tutorial 3 Notes
 
-**Tutorial 3**: https://docs.google.com/presentation/d/1GjGW39ufWI3bDcy7rMcaRYin_11soNIzCh2CtzO7580/edit?slide=id.p#slide=id.p
+**Tutorial 3:** https://docs.google.com/presentation/d/1GjGW39ufWI3bDcy7rMcaRYin_11soNIzCh2CtzO7580/edit?slide=id.p#slide=id.p
 
 ## Transformations in ROS
 **Goal:**

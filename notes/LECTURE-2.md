@@ -1,6 +1,6 @@
 # Lecture 2 Notes
 
-**Lecture 2**: https://www.youtube.com/watch?v=k4FQ-dZ0Lp8
+**Lecture 2:** https://www.youtube.com/watch?v=k4FQ-dZ0Lp8
 
 ## Automatic Emergency Braking (AEB) on the road
 - **Relative Speed:**
@@ -136,7 +136,7 @@ Therefore, we need to consider both **relative distance** and the **rate of chan
 - **Time-to-Collision (TTC)**: TTC is the time it would take for the ego vehicle and an object to collide, assuming both maintain their current heading and velocity.
 - **Visual: TTC Illustration**  
 ![TTC Illustration](/assets/TTC.png)
-- **Definition**: $\mathrm{TTC}_i(t) = \frac{r_i(t)}{[-\dot r_i(t)]_+}$, where $[x]_+ = \max(x,0)$.
+- **Definition**: $`\mathrm{TTC}_i(t) = \frac{r_i(t)}{[-\dot r_i(t)]_+}`$, where $[x]_+ = \max(x,0)$.
 - **Range**: $r_i(t)$ is the distance between the vehicle and object $i$.
 - **Range-rate**: $\dot r_i(t)$ is the time derivative of the range (range-rate).
 - **Property**: $\mathrm{TTC}_i(t) \to \infty$ when $\dot r_i(t) > 0$ (object moving away).
