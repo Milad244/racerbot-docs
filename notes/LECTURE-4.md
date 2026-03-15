@@ -105,7 +105,7 @@ Process:
 As the **armature current stabilizes**, the **motor speed settles around the target RPM**.
 
 - **Visual: Motor Settling**
-	![Motor Settling](/assets/MOTOR-SETTLING.png)
+	![Motor Settling](/assets/module-b/MOTOR-SETTLING.png)
 
 The ESC is configured so the programmer interacts only with **high-level commands** such as:
 
@@ -243,7 +243,7 @@ Objective:
 ### Wall Distance Estimation
 
 - **Visual: Instantaneous Error**
-	![Instantaneous Error](/assets/INSTANTANEOUS-ERROR.png)
+	![Instantaneous Error](/assets/module-b/INSTANTANEOUS-ERROR.png)
 - LiDAR scan: 270° field, angles −135° to +135°.
 - Choose rays at 0° (`b`) and θ° (`a`, 0°–70°).
 - Wall angle: `α = atan((a cos(θ) - b) / (a sin(θ)))`
@@ -253,7 +253,7 @@ Objective:
 - Use projected distance for error.
 
 - **Visual: Projected Error**
-	![Projected Error](/assets/PROJECTED-ERROR.png)
+	![Projected Error](/assets/module-b/PROJECTED-ERROR.png)
 
 ### Applying PID Control
 

@@ -42,7 +42,7 @@ Creates:
 - `frames.pdf`
 
 **Example: Frames in the simulator**
-![TF Tree](/assets/TF-TREE.png)
+![TF Tree](/assets/module-a/TF-TREE.png)
 
 ## Static Transforms
 Used when:
