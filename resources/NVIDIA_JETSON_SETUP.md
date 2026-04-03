@@ -1,6 +1,6 @@
 # How to Setup The NVIDIA Jetson Orin Nano
 
-## Pre-Requisites
+## Prerequisites
 You need to be either running `Windows 10/11` or `Ubuntu 22.04 LTS` (Cannot be Ubuntu derivatives such as Linux Mint, has to be Ubuntu 22.04)
 
 You need an NVIDIA account (it's free) or get the club NVIDIA account from an executive
@@ -62,7 +62,7 @@ and password, enter the username and password you saw before (not the one to log
 You should now be remotely connected to the Jetson and can safely disconnect the monitor/keyboard/mouse.
 
 ### Linux
-I highly reccomend looking into installing [Remmina](https://remmina.org/)
+I highly recommend looking into installing [Remmina](https://remmina.org/)
 
 ## What to do on SFU Wi-Fi
 SFU's internet doesn't allow for easily connecting to local devices, so for now the best thing to do is create a hotspot from your computer. On Windows 11, go to Settings, go
