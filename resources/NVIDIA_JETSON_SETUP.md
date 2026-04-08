@@ -29,6 +29,9 @@ Open the NVIDIA SDK Manager and login to your own NVIDIA account or the club acc
 
 There should be a popup saying that the board was detected and two options are given, choose the one that has `Developer Kit` in the name.
 
+### ❗ Note For Windows Users
+You need to install the driver so your computer can interface with the Jetson, you can view the instructions on how to install them [here](https://developer.download.nvidia.com/sdkmanager/resources/help/index.html)
+
 The software should look like this, except yours should say that the board was detected
 ![Figure 2](/assets/resources/figure-2.png)
 
