@@ -1,100 +1,68 @@
 #include "rclcpp/rclcpp.hpp"
-#include <string>
 #include "sensor_msgs/msg/laser_scan.hpp"
-#include "nav_msgs/msg/odometry.hpp"
 #include "ackermann_msgs/msg/ackermann_drive_stamped.hpp"
+#include <cmath>
+#include <algorithm>
 
 class WallFollow : public rclcpp::Node {
 public:
     WallFollow() : Node("wall_follow_node")
     {
-        // TODO: create ROS subscribers and publishers
+        RCLCPP_INFO(this->get_logger(), "Wall follow node started");
+
+        prev_time_ = this->now();
+
+        /// TODO: Create ROS subscribers and publishers
     }
 
 private:
-    // PID CONTROL PARAMS
-    // TODO: double kp_ =
-    // TODO: double kd_ =
-    // TODO: double ki_ =
+    /// TODO: PID control parameters
+    double kp_ = 0.0;
+    double kd_ = 0.0;
+    double ki_ = 0.0;
     double servo_offset_ = 0.0;
-    double prev_error_ = 0.0;
-    double error_ = 0.0;
-    double integral_ = 0.0;
+    rclcpp::Time prev_time_; // for dt
+    double prev_error_ = 0.0; // for derivative
+    double integral_ = 0.0; // for integral
+    double desired_dist_ = 1.0;
+    double look_ahead_ = 1.5;
 
     // Topics
-    std::string lidarscan_topic_ = "/scan";
-    std::string drive_topic_ = "/drive";
-    /// TODO: create ROS subscribers and publishers
+    rclcpp::Publisher<ackermann_msgs::msg::AckermannDriveStamped>::SharedPtr drive_pub_;
+    rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr laser_scan_sub_;
 
-    double get_range(float* range_data, double angle)
+    // Returns the corresponding range measurement from a given angle
+    double get_range(sensor_msgs::msg::LaserScan::ConstSharedPtr scan_msg, double angle)
     {
-        /*
-        Simple helper to return the corresponding range measurement at a given angle.
-        Make sure you take care of NaNs and infs.
-
-        Args:
-            range_data: single range array from the LiDAR
-            angle: between angle_min and angle_max of the LiDAR
-
-        Returns:
-            range: range measurement in meters at the given angle
-        */
-
-        // TODO: implement
+        /// TODO: Implement, handling invalid ranges and indices
         return 0.0;
     }
 
-    double get_error(float* range_data, double dist)
+    // Calculates the error to the wall, following the wall to the left (going counter clockwise in the Levine loop).
+    double get_error(sensor_msgs::msg::LaserScan::ConstSharedPtr scan_msg)
     {
-        /*
-        Calculates the error to the wall. Follow the wall to the left (going counter clockwise in the Levine loop).
-        You potentially will need to use get_range()
+        /// TODO: Do the trigonometry for finding alpha
+        // (you can pick any angle a as angle b + (0, 70] degrees) experiment!
 
-        Args:
-            range_data: single range array from the LiDAR
-            dist: desired distance to the wall
-
-        Returns:
-            error: calculated error
-        */
-
-        // TODO:implement
+        /// TODO: Use alpha to find and return the total error (error is with respect to desired_dist)
         return 0.0;
     }
 
-    void pid_control(double error, double velocity)
+    // Based on the given error, use PID to publish vehicle control
+    void pid_control(double error)
     {
-        /*
-        Based on the calculated error, publish vehicle control
+        /// TODO: Calculate steering angle using PID
+        // (remember to clamp integral and steering angle)
 
-        Args:
-            error: calculated error
-            velocity: desired velocity
+        /// TODO: Calculate velocity based on steering angle
 
-        Returns:
-            None
-        */
-        double angle = 0.0;
-        // TODO: Use kp, ki & kd to implement a PID controller
-        auto drive_msg = ackermann_msgs::msg::AckermannDriveStamped();
-        // TODO: fill in drive message and publish
+        /// TODO: Publish PID vehicle control
     }
 
+    // Callback function for LaserScan messages. Calculates the error and calls PID control with it.
     void scan_callback(const sensor_msgs::msg::LaserScan::ConstSharedPtr scan_msg) 
     {
-        /*
-        Callback function for LaserScan messages. Calculate the error and publish the drive message in this function.
-
-        Args:
-            msg: Incoming LaserScan message
-
-        Returns:
-            None
-        */
-        double error = 0.0; // TODO: replace with error calculated by get_error()
-        double velocity = 0.0; // TODO: calculate desired car velocity based on error
-        // TODO: actuate the car with PID
-
+        /// TODO: Implement
     }
 };
 
