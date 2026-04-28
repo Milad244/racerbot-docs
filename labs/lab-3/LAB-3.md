@@ -73,7 +73,7 @@ Use [wall_follow_node.cpp](./wall_follow_node.cpp) as your template to write the
 
 ## V. Deliverables
 
-Have your wall following package launch and run smoothly in the simulation..
+Have your wall following package launch and run smoothly in the simulation.
 
 ## Credits
 Adapted from [f1tenth lab 3](https://github.com/f1tenth/f1tenth_lab3_template).
