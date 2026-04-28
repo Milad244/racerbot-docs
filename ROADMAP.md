@@ -32,6 +32,7 @@
 11. [Tutorial 3](https://docs.google.com/presentation/d/1GjGW39ufWI3bDcy7rMcaRYin_11soNIzCh2CtzO7580/edit?slide=id.p#slide=id.p)
     - [Tutorial 3 Notes](notes/TUTORIAL-3.md) (optional)
 12. [Lecture and Tutorial 3 Kahoot](https://create.kahoot.it/share/lecture-and-tutorial-3/5f7bdca4-fc09-4610-9e83-a0bd9d6a16f2)
+
 ## Module B: Reactive Methods
 1. [Lecture 4](https://www.youtube.com/watch?v=qIpiqhO3ITY)
     - [Lecture 4 Notes](notes/LECTURE-4.md) (optional)
@@ -41,3 +42,8 @@
 <hr style="border-top: 1px dotted #bbb; background: transparent;">
 
 3. [Lab 3](labs/lab-3/)
+
+<hr style="border-top: 1px dotted #bbb; background: transparent;">
+
+4. [Lecture 5](https://www.youtube.com/watch?v=5asfD-_Z9x8)
+    - [Lecture 5 Notes](notes/LECTURE-5.md) (optional)
