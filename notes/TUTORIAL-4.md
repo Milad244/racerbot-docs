@@ -4,7 +4,7 @@
 
 ## 1. LiPo Batteries
 **Battery**  
-![Battery](/assets/module-b/tutorial-4/tutorial-4/battery.png)
+![Battery](/assets/module-b/tutorial-4/battery.png)
 - **Capacity:** Amount of power a battery can hold.
 - **C-rating:** Max safe discharge → Burst current = C × Capacity (e.g., 50C × 5Ah = 250A)
 - **Cell voltage:** 3.0–4.2V; nominal/storage 3.7V
