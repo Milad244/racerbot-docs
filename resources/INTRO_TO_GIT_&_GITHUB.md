@@ -118,7 +118,7 @@ git commit -m "asdfghjkl"
 ```
 
 ## Typical Workflow
-Here is the standard workflow you will use when contributing to a Raverbot project on GitHub:
+Here is the standard workflow you will use when contributing to a Racerbot project on GitHub:
 
 ```
 # Clone the repo (first time only)
