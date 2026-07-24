@@ -43,6 +43,7 @@ ros2 run teleop_twist_keyboard teleop_twist_keyboard
 ## Building and Running Packages
 1. Source your environment.
 ```bash
+cd /racerbot_ws
 source install/setup.bash
 ```
 
@@ -55,6 +56,7 @@ Replace `dependency1` `dependency2` `dependency3` with the dependencies your pac
 
 3. Use `rosdep` to install the dependencies specified in your `package.xml` file.
 ```bash
+cd /racerbot_ws
 rosdep update
 rosdep install --from-paths src --ignore-src -r -y
 ```
@@ -114,10 +116,12 @@ install(TARGETS your_node_name DESTINATION lib/${PROJECT_NAME})
 
 9. Build all your packages using `colcon`.
 ```bash
+cd /racerbot_ws
 colcon build
 ```
 Or build a specific package.
 ```bash
+cd /racerbot_ws
 colcon build --packages-select your_pkg_name_pkg
 ```
 
