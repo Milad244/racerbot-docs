@@ -370,7 +370,7 @@ For an edge between nodes $\mathbf{x}_i$ and $\mathbf{x}_j$:
 **Goal:**
 
 $$
-\mathbf{x}^{*} = \operatorname*{argmin}_{\mathbf{x}} \sum_{ij} \mathbf{e}_{ij}^{T}\, \boldsymbol{\Omega}_{ij}\, \mathbf{e}_{ij}
+\mathbf{x}^{*} = \arg\min_{\mathbf{x}} \sum_{ij} \mathbf{e}_{ij}^{T}\, \boldsymbol{\Omega}_{ij}\, \mathbf{e}_{ij}
 $$
 
 ![Pose Graph Error](/assets/module-c/lecture-9/pose-graph-error.png)
@@ -458,11 +458,11 @@ For 2D LiDAR scans, each of these distributions is based on which surface of the
 The optimal transformation is:
 
 $$
-T^{*} = \operatorname*{argmax}_{T} \sum_{i \in N} L(T p_i)
+T^{*} = \arg\max_{T} \sum_{i \in N} L(T p_i)
 $$
 
 - $T^{*}$: optimal transformation
-- $\operatorname{argmax}_T$: over all plausible transformations
+- $\arg\max_T$: over all plausible transformations
 - $\sum_{i \in N}$: sum over all scan points
 - $L(\cdot)$: lookup function
 - $T p_i$: points transformed into a common frame of reference

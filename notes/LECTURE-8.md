@@ -139,7 +139,7 @@ Once the car proceeds further, the goal is to find the **pose change** relative 
 The robot pose is $\boldsymbol{\xi} = (p_x, p_y, \psi)^{\mathrm{T}}$. Hector SLAM solves:
 
 $$
-\boldsymbol{\xi}^{*} = \operatorname*{argmin}_{\boldsymbol{\xi}} \sum_{i=1}^{n} \left[ 1 - M(\mathbf{S}_i(\boldsymbol{\xi})) \right]^2
+\boldsymbol{\xi}^{*} = \arg\min_{\boldsymbol{\xi}} \sum_{i=1}^{n} \left[ 1 - M(\mathbf{S}_i(\boldsymbol{\xi})) \right]^2
 $$
 
 - $\mathbf{S}_i(\boldsymbol{\xi})$: impact coordinates of the $i$-th scan in the world frame
@@ -168,8 +168,6 @@ Solving for $\Delta\boldsymbol{\xi}$ yields the **Gauss-Newton equation**. Evalu
 In practice: keep rotating and translating the second scan until the error is minimum, which means the scans are aligned. Then update the pose with the calculated pose change, transform the current laser scans to the new pose, and update the map with the transformed scans.
 
 ![Hector SLAM Gauss-Newton Derivation](/assets/module-c/lecture-8/hector-gauss-newton.png)
-
-> There is a dedicated lecture on Scan Matching online if you want to go deeper.
 
 ### Map Update in Practice
 The occupancy grid does **not** assign a wall or free space from a single scan, since that would introduce a lot of noise. Each cell maintains a value that is a function of:
@@ -611,12 +609,3 @@ Then add `your_map.pgm` and `your_map.yaml` to:
 - Weights are normalized and multiplied over time ($W_t \leftarrow W_{t-1} \times S$); without resampling, weight collapses onto a few particles
 - AMCL = particle filter + **KLD sampling**, which varies the particle count with the remaining uncertainty, so a converged cloud costs less compute
 - The art is designing appropriate **motion and sensor models**; MCL is the gold standard for indoor mobile robot localization today
-
-## References
-- S. Thrun, W. Burgard. *Probabilistic Robotics*, Chapters 4 and 8 — http://www.probabilistic-robotics.org/
-- S. Thrun. *Artificial Intelligence for Robotics*, Lesson 3, Udacity — https://www.udacity.com/course/artificial-intelligence-for-robotics--cs373
-- S. Thrun, D. Fox, W. Burgard, F. Dellaert. "Robust Monte Carlo Localization for Mobile Robots." *Artificial Intelligence Journal*, 2001
-- D. Fox, W. Burgard, S. Thrun. "Markov localization for mobile robots in dynamic environments." *JAIR*, vol. 11, pp. 391-427, 1999 — http://www.jair.org/media/616/live-616-1819-jair.pdf
-- D. Fox. "KLD-sampling: Adaptive particle filters." *NIPS 14*, 2002 — https://papers.nips.cc/paper/1998-kld-sampling-adaptive-particle-filters.pdf
-- D. Bagnell. "Particle Filters: The Good, The Bad, The Ugly" — http://www.cs.cmu.edu/~16831-f12/notes/F14/16831_lecture05_gseyfarth_zbatts.pdf
-- C. Walsh, S. Karaman. "CDDT: Fast Approximate 2D Ray Casting for Accelerated Localization." arXiv, 2017 — http://arxiv.org/abs/1705.01167
