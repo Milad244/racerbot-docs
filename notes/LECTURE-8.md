@@ -210,12 +210,12 @@ Hector odometry provides the transform between the odom frame and the base frame
 ![Hector TF Tree](/assets/module-c/lecture-8/hector-tf-tree.png)
 
 ### Parameters for Hector SLAM in ROS
-- `map resolution` — grid resolution
-- `map_update_distance_thresh` — minimum distance travelled before a map update
-- `map_update_angle_thresh` — minimum angle travelled before a map update
-- `laser_max_dist` — laser sensor specification
-- `update_factor_free` — log odds probability for free cells
-- `update_factor_occupied` — log odds probability for occupied cells
+- `map resolution`: grid resolution
+- `map_update_distance_thresh`: minimum distance travelled before a map update
+- `map_update_angle_thresh`: minimum angle travelled before a map update
+- `laser_max_dist`: laser sensor specification
+- `update_factor_free`: log odds probability for free cells
+- `update_factor_occupied`: log odds probability for occupied cells
 
 ## Localization with Odometry
 
@@ -317,7 +317,7 @@ $$
 - $\bar{A}$, $\bar{B}$: mean values of all the pixel values of the respective maps, where walls have a value of 1 and free space has a value of 0
 - $m$, $n$: the x and y coordinates of the pixels
 
-This equation essentially **counts the number of wall pixels that overlap** between the scan and the map.
+This equation **counts the number of wall pixels that overlap** between the scan and the map.
 
 ![Scan Correlation Formula](/assets/module-c/lecture-8/scan-correlation-formula.png)
 
@@ -392,13 +392,13 @@ The AMCL package provides a transform to correct the drift in Hector odometry so
 3. Pre-built map
 
 **Outputs:**
-4. AMCL pose — the corrected pose of our vehicle
+4. AMCL pose: the corrected pose of our vehicle
 5. Particle cloud, for debugging
 
 ## Particle Filters: Analysis
 
 ### Problem Definition
-- Estimating the state of a dynamical system is a fundamental problem — here, estimating the state of the vehicle within its environment
+- Estimating the state of a dynamical system is a fundamental problem. Here, that means estimating the state of the vehicle within its environment
 - The **recursive Bayes filter** is an effective approach to estimate the belief about the state of a dynamical system
   - How do we represent this belief in a probabilistic way?
   - How do we maximize it?
@@ -600,11 +600,11 @@ Then add `your_map.pgm` and `your_map.yaml` to:
 | `initial_cov_xx` / `initial_cov_yy` / `initial_cov_aa` | 0 | The covariance of particles distributed around the mean |
 
 ## Key Takeaways
-- SLAM is a chicken-and-egg problem: you need a map to localize, but a pose to map — solved by doing both incrementally
+- SLAM is a chicken-and-egg problem: you need a map to localize, but a pose to map. It is solved by doing both incrementally
 - Occupancy grids store cells as occupied / free / unexplored, updated in **log odds** to avoid numerical underflow, and **saturated** so no cell becomes absolutely certain
 - Hector SLAM finds the pose change by minimizing $\sum [1 - M(\mathbf{S}_i(\boldsymbol{\xi}))]^2$, solved via Taylor expansion → Gauss-Newton; multi-resolution grids (20 → 10 → 5 cm) avoid local minima
 - Odometry alone is open-loop: wheel slip and integration error make the pose drift without bound; scan matching alone fails in featureless corridors
-- Particle filters are non-parametric, recursive Bayes filters — the posterior is represented by a set of **weighted samples**, so arbitrary non-Gaussian distributions can be captured
+- Particle filters are non-parametric, recursive Bayes filters. The posterior is represented by a set of **weighted samples**, so arbitrary non-Gaussian distributions can be captured
 - The loop is **predict** (motion model as proposal) → **correct** (weight by scan correlation against the map) → **resample** (survival of the fittest)
 - Weights are normalized and multiplied over time ($W_t \leftarrow W_{t-1} \times S$); without resampling, weight collapses onto a few particles
 - AMCL = particle filter + **KLD sampling**, which varies the particle count with the remaining uncertainty, so a converged cloud costs less compute

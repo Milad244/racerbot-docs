@@ -26,7 +26,7 @@ The Simultaneous Localization and Mapping problem asks whether it is possible fo
 
 The conceptual breakthrough came with the realization that the combined mapping and localization problem, once formulated as a **single estimation problem**, was actually convergent.
 
-Correlations between landmarks, which most researchers had tried to minimize, were actually the critical part of the problem — on the contrary, the more these correlations grew, the better the solution.
+Correlations between landmarks, which most researchers had tried to minimize, were actually the critical part of the problem. On the contrary, the more these correlations grew, the better the solution.
 
 ## Idea of Graph-Based SLAM
 
@@ -58,7 +58,7 @@ The map helps determine constraints by reducing the search space. The topic of t
 
 - Calculating the current position of a moving robot based on a previously determined position
 - In our case, the VESC determines the current ERPM of the motor and converts it into the vehicle's longitudinal velocity. The servo angle is used to determine the current steering angle
-- Using a basic kinematics model, the relative position of the car can be determined — this is **odometry**
+- Using a basic kinematics model, the relative position of the car can be determined. This is **odometry**
 
 ### Sensing the Environment
 Put the car in an unknown environment; it has no idea what is around it. The LiDAR gives range measurements that represent part of the environment.
@@ -84,7 +84,7 @@ This scenario is not realistic. There is error in both the LiDAR measurement and
 
 Walking through the failure:
 1. We get an initial LiDAR measurement and assume there is an obstacle there, just like before
-2. We drive a bit — except this time the **estimated pose differs from the real pose**
+2. We drive a bit, except this time the **estimated pose differs from the real pose**
 3. The LiDAR returns correct relative distances to the wall the real robot sees, but we can only assume they are relative to the *estimated* pose, since that is all we know
 4. The mapping algorithm mistakenly puts the points in the wrong position using the wrong odometry
 5. This places the two measured obstacles in **different frames** rather than a global environment frame, so they do not line up
@@ -92,7 +92,7 @@ Walking through the failure:
 
 ![Real World Drift](/assets/module-c/lecture-9/real-world-drift.png)
 
-The end result is a map of obstacles that does not resemble the real environment at all. Uncertainty in our system messes it up — this is why we cannot just take measurements and stick the results into a map.
+The end result is a map of obstacles that does not resemble the real environment at all. Uncertainty in our system messes it up, and this is why we cannot just take measurements and stick the results into a map.
 
 ![Real World Final Map](/assets/module-c/lecture-9/real-world-final-map.png)
 
@@ -109,7 +109,7 @@ The end result is a map of obstacles that does not resemble the real environment
 ### Pose Graph Optimization (Graph-based)
 - Use **pose graphs** to store constraints between pose estimations
 - Use optimization for **loop closure** to correct pose estimations
-- Examples: **KartoSLAM**, **Cartographer** — we will be using `slam_toolbox`, also graph-based
+- Examples: **KartoSLAM**, **Cartographer**. We will be using `slam_toolbox`, also graph-based
 
 How it works:
 1. Store pose estimations and measurements in a pose graph, keeping the relative pose estimations as constraints **with confidence**
@@ -123,9 +123,9 @@ The first thing the robot does is take a measurement of the environment. That me
 The robot drives a little, its estimated pose starts to deviate from the real pose, takes another measurement, and that combination is saved as the second entry.
 
 ### The Spring Analogy
-There is a constraint on the relative distance between two poses. Ideally they stay exactly that far apart since that is our best estimate — but due to uncertainty in the odometry process, we might be better off moving these two poses relative to each other.
+There is a constraint on the relative distance between two poses. Ideally they stay exactly that far apart since that is our best estimate, but due to uncertainty in the odometry process, we might be better off moving these two poses relative to each other.
 
-To visualize a constraint, imagine a **spring or rubber bar** connecting the two poses:
+To visualize a constraint, picture a **spring or rubber bar** connecting the two poses:
 - The **nominal length** of the bar is how far apart we estimate them to be
 - With no external forces, the bar keeps them at this fixed distance
 - If you hold one pose fixed and move the other closer or further, it compresses or stretches the bar, creating a **restoring force**
@@ -147,10 +147,10 @@ The point is that we are creating the **edges** of the graph, modeling "tension"
 
 ### Nomenclature
 - The **poses are the nodes** of the graph
-- The **constraint (the rubber bar) is an edge** — the relative pose estimation between nodes, obtained from odometry in our case
+- The **constraint (the rubber bar) is an edge**: the relative pose estimation between nodes, obtained from odometry in our case
 - The constraint acts in all **three pose dimensions**: X, Y, and rotation, always trying to bring the nodes back to their estimated distance
 
-Building the graph one pose at a time gives us something that looks like the incorrect map we built earlier, with the exception that there are now **constraints connecting all of the poses**. At this point all the bars are at their nominal length and everything wants to stay right where it is — so we still cannot do much with this information alone.
+Building the graph one pose at a time gives us something that looks like the incorrect map we built earlier, with the exception that there are now **constraints connecting all of the poses**. At this point all the bars are at their nominal length and everything wants to stay right where it is, so we still cannot do much with this information alone.
 
 ## Pose Graph Optimization: Loop Closure
 
@@ -169,7 +169,7 @@ The **stiffness** of this spring is determined by your confidence in your sensor
 
 ![Loop Closure Tension](/assets/module-c/lecture-9/loop-closure-tension.png)
 
-Allowing this graph to **settle to equilibrium** — balancing all the forces the constraints impose — is the *optimization* part of pose graph optimization. This is **loop closure**: we solve for the tensions between each node to reach equilibrium, as an optimization problem.
+Allowing this graph to **settle to equilibrium**, balancing all the forces the constraints impose, is the *optimization* part of pose graph optimization. This is **loop closure**: we solve for the tensions between each node to reach equilibrium, as an optimization problem.
 
 When the graph reaches equilibrium, the collected data looks a lot better and resembles the true environment.
 
@@ -178,7 +178,7 @@ When the graph reaches equilibrium, the collected data looks a lot better and re
 ### Why Loop Closure Is So Valuable
 By optimizing the pose graph, we get not only a better estimate of the **current** pose and a better model of the environment, but also a better estimate of **where the robot was in the past**, since all past poses are updated too. We get a lot of value from one loop closure.
 
-This is the essential step in graph-based SLAM — it is what makes graph SLAM work.
+This is the essential step in graph-based SLAM. It is what makes graph SLAM work.
 
 ### More Loop Closures
 - Before a new loop closure, the graph is in equilibrium, so no further adjustments are made
@@ -196,7 +196,7 @@ This is the essential step in graph-based SLAM — it is what makes graph SLAM w
 In our 2D case we use **occupancy grids**.
 
 ### Binary Occupancy Grid
-Fill in the grids that have a data point in them as occupied. Problem: if a grid is **mistakenly hit** — whether from localization errors or LiDAR noise — it stays an occupied grid forever.
+Fill in the grids that have a data point in them as occupied. Problem: if a grid is **mistakenly hit**, whether from localization errors or LiDAR noise, it stays an occupied grid forever.
 
 ### Probabilistic Occupancy Grid
 Each grid stores the **probability** that it is occupied. The odds in the grid are continuously updated according to "hits" and "misses" by the laser scan. This is a better solution than the binary grid:
@@ -217,8 +217,8 @@ $$
 ## Final Notes on Graph-based SLAM
 
 Graph-based SLAM is **sensor agnostic**. It only requires 2 types of sensors:
-1. One that can measure **relative transformations** between poses (IMU, odometry, wheel encoders, etc.) — used to build constraints between nodes
-2. One that can measure **absolute observation** of the environment (LiDARs, cameras, etc.) — used for loop closure
+1. One that can measure **relative transformations** between poses (IMU, odometry, wheel encoders, etc.), used to build constraints between nodes
+2. One that can measure **absolute observation** of the environment (LiDARs, cameras, etc.), used for loop closure
 
 The front end and the back end are executed in an **interleaved** way. There are many more caveats in realizing such a system in software.
 
@@ -233,7 +233,7 @@ The front end and the back end are executed in an **interleaved** way. There are
 - Path of the robot
 
 ### Probabilistic Approaches
-There is uncertainty in the robot's motions and observations, so we use probability theory to explicitly represent that uncertainty — the difference between "the robot is exactly here" and "the robot is somewhere here."
+There is uncertainty in the robot's motions and observations, so we use probability theory to explicitly represent that uncertainty. It is the difference between "the robot is exactly here" and "the robot is somewhere here."
 
 ### In the Probabilistic World
 Estimate the robot's path and the map:
@@ -278,7 +278,7 @@ These integrals are typically solved **recursively**, one at a time.
 ## Why is SLAM a Hard Problem?
 
 ### 1. Robot Path and Map Are Both Unknown
-Map and pose estimates are **correlated**. The position estimate of the newest landmarks depends on the robot position, which in turn depends on the observed landmark the robot used to correct its position — so landmarks become correlated with each other.
+Map and pose estimates are **correlated**. The position estimate of the newest landmarks depends on the robot position, which in turn depends on the observed landmark the robot used to correct its position, so landmarks become correlated with each other.
 
 ![SLAM is Hard: Correlated Estimates](/assets/module-c/lecture-9/slam-hard-correlated.png)
 
@@ -322,7 +322,7 @@ $$
 - Can be a Gaussian or a non-Gaussian model
 
 ### Model for Virtual Observations
-Relate pairs of poses from which observations have been recorded — this gives us knowledge about the **relative poses**.
+Relate pairs of poses from which observations have been recorded. This gives us knowledge about the **relative poses**.
 
 ## Least Squares SLAM
 
@@ -346,7 +346,7 @@ Relate pairs of poses from which observations have been recorded — this gives 
 ### Transformations
 Transformations can be expressed using **homogeneous coordinates**:
 - **Odometry-based edge:** $(\mathbf{X}_i^{-1}\mathbf{X}_{i+1})$
-- **Observation-based edge:** $(\mathbf{X}_i^{-1}\mathbf{X}_j)$ — how node $i$ sees node $j$
+- **Observation-based edge:** $(\mathbf{X}_i^{-1}\mathbf{X}_j)$, how node $i$ sees node $j$
 
 ### Homogeneous Coordinates
 - A system of coordinates used in **projective geometry**, an alternative representation of geometric objects and transformations
@@ -364,7 +364,7 @@ Questions worth thinking about:
 
 ### The Pose Graph
 For an edge between nodes $\mathbf{x}_i$ and $\mathbf{x}_j$:
-- $\langle \mathbf{z}_{ij}, \boldsymbol{\Omega}_{ij} \rangle$: the edge — the observation of $\mathbf{x}_j$ from $\mathbf{x}_i$, with its information matrix
+- $\langle \mathbf{z}_{ij}, \boldsymbol{\Omega}_{ij} \rangle$: the edge, the observation of $\mathbf{x}_j$ from $\mathbf{x}_i$, with its information matrix
 - $\mathbf{e}_{ij}(\mathbf{x}_i, \mathbf{x}_j)$: the **error** between the nodes according to the graph and the observation
 
 **Goal:**
@@ -451,7 +451,7 @@ For 2D LiDAR scans, each of these distributions is based on which surface of the
 - Candidate transformations are scored according to a **cost map**
 - Rendered into the cost map with a **blurring kernel** to approximate uncertainty in scans
 - Candidates are generated from plausible priors (e.g. from odometry)
-- The **covariance** of the solution can also be principally calculated (this matters — it becomes the edge information matrix)
+- The **covariance** of the solution can also be principally calculated (this matters, since it becomes the edge information matrix)
 
 ![Correlative Scan Matching Cost Map](/assets/module-c/lecture-9/correlative-scan-matching-costmap.png)
 
@@ -476,16 +476,16 @@ $$
 - Full SLAM vs. Online SLAM
 
 ## What's Next?
-- A natural step after creating a map is to localize the robot within a known map — we have done that already with the **Particle Filter**
+- A natural step after creating a map is to localize the robot within a known map. We have done that already with the **Particle Filter**
 - With the ability to make a map and localize, we move on to **motion planning** in the next few lectures
 - We will also go over how to run `slam_toolbox` on the cars
 
 ## Key Takeaways
-- Filtering-based SLAM (EKF, particle filter) still accumulates compounding error, because filtering never recovers ground truth — it struggles on large environments and badly-off dead reckoning
+- Filtering-based SLAM (EKF, particle filter) still accumulates compounding error, because filtering never recovers ground truth. It struggles on large environments and badly-off dead reckoning
 - Graph-based SLAM reframes the problem: **nodes are poses + measurements**, **edges are spatial constraints**, and mapping becomes finding the node configuration that minimizes constraint error
 - The spring analogy: each edge is a rubber bar whose nominal length is the estimated relative pose and whose **stiffness is your confidence** in that estimate
-- **Loop closure** is what makes graph SLAM work — recognizing a revisited place adds a constraint that, when the graph re-settles, corrects not just the current pose but the **entire past trajectory**
-- A wrong loop closure lands the optimization in the wrong equilibrium — it is better to miss a loop closure than to make a false one, and loop closure needs **absolute** environment measurements, not relative ones like IMU
+- **Loop closure** is what makes graph SLAM work. Recognizing a revisited place adds a constraint that, when the graph re-settles, corrects not just the current pose but the **entire past trajectory**
+- A wrong loop closure lands the optimization in the wrong equilibrium. It is better to miss a loop closure than to make a false one, and loop closure needs **absolute** environment measurements, not relative ones like IMU
 - Probabilistic occupancy grids beat binary ones because constant hit/miss updating eventually washes out false positives
 - Formally: minimize $\sum_{ij} \mathbf{e}_{ij}^T \boldsymbol{\Omega}_{ij} \mathbf{e}_{ij}$, an overdetermined least squares problem solved via Sparse Pose Adjustment with Levenberg-Marquardt
-- Graph-based SLAM is **sensor and scan-matcher agnostic** — it only needs one sensor for relative transformations and one for absolute environment observation
+- Graph-based SLAM is **sensor and scan-matcher agnostic**. It only needs one sensor for relative transformations and one for absolute environment observation
