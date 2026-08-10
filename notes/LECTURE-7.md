@@ -25,7 +25,7 @@ $$
 
 State Estimation runs this pipeline *backwards*: use the control inputs and sensor outputs to estimate the internal state (e.g. the car's location).
 
-![State Estimation Pipeline](/assets/module-b/lecture-7/state-estimation-pipeline.png)
+![State Estimation Pipeline](/assets/module-c/lecture-7/state-estimation-pipeline.png)
 
 ### Dead Reckoning
 
@@ -50,7 +50,7 @@ These are imperfect estimates → we always have noise.
 
 Key reframe: instead of asking for one exact position, frame state estimation as approximating a *distribution* over the position $p(x)$.
 
-![Dead Reckoning Noise](/assets/module-b/lecture-7/dead-reckoning-noise.png)
+![Dead Reckoning Noise](/assets/module-c/lecture-7/dead-reckoning-noise.png)
 
 ### State Estimation as a Distribution
 
@@ -91,7 +91,7 @@ With $A$: evidence (observation), $B$: hypothesis (state):
 - **Posterior** $P(B \mid A)$: updated belief *after* the evidence is considered
 - **Evidence** $P(A)$: usually a normalization term so the posterior is a valid PDF
 
-![Bayes Rule](/assets/module-b/lecture-7/bayes-rule.png)
+![Bayes Rule](/assets/module-c/lecture-7/bayes-rule.png)
 
 ### Law of Total Probability
 Decompose a problem by conditioning on another variable.
@@ -110,7 +110,7 @@ $$
 
 where $f_X(x)$ is the probability density function (PDF) and $F(x)$ the cumulative distribution function (CDF).
 
-![Law of Total Probability](/assets/module-b/lecture-7/law-of-total-probability.png)
+![Law of Total Probability](/assets/module-c/lecture-7/law-of-total-probability.png)
 
 ### More Evidence → More Conditions
 Bayes Rule extends when we condition on extra context $C_1, \dots, C_n$:
@@ -156,7 +156,7 @@ $$
 
 This is what collapses the full history into a simple recursion.
 
-![Hidden Markov Model](/assets/module-b/lecture-7/hidden-markov-model.png)
+![Hidden Markov Model](/assets/module-c/lecture-7/hidden-markov-model.png)
 
 ### Step 1: Prediction (with the control input)
 Like dead reckoning, but probabilistic. Start from the predicted belief $\overline{bel}(x_t)$ and apply the Law of Total Probability (condition on $x_{t-1}$):
@@ -204,7 +204,7 @@ $$
 
 This is why we use variants of the Bayes filter that make the math tractable.
 
-![Bayes Filter Derivation](/assets/module-b/lecture-7/bayes-filter-derivation.png)
+![Bayes Filter Derivation](/assets/module-c/lecture-7/bayes-filter-derivation.png)
 
 ## Variants of Bayes Filter
 
@@ -231,19 +231,19 @@ Walkthrough:
 - **[Fig3]** A noisy measurement at $T=1$ (its own Gaussian)
 - **[Fig4]** Multiply the prediction and measurement PDFs → fused estimate that is sharper than either alone
 
-![KF Gaussian Fusion](/assets/module-b/lecture-7/kf-gaussian-fusion.png)
+![KF Gaussian Fusion](/assets/module-c/lecture-7/kf-gaussian-fusion.png)
 
 ### EKF Example
 On a GNSS-tracked trajectory:
 - Blue = true trajectory, Black = dead reckoning, Green = GNSS observations
 - Red line = EKF estimate, Red ellipse = EKF covariance estimate
 
-![EKF Trajectory](/assets/module-b/lecture-7/ekf-trajectory.png)
+![EKF Trajectory](/assets/module-c/lecture-7/ekf-trajectory.png)
 
 ### Practical Problem of KF: Non-Gaussian Noise
 When the noise is *not* Gaussian (e.g. GNSS in practice), the KF/EKF estimate degrades, motivating the particle filter.
 
-![KF Non-Gaussian Noise](/assets/module-b/lecture-7/kf-non-gaussian.png)
+![KF Non-Gaussian Noise](/assets/module-c/lecture-7/kf-non-gaussian.png)
 
 ## Particle Filter
 
@@ -274,7 +274,7 @@ $$
 p(x) \approx \sum_{i=1}^{n} w^{(i)}\,\delta_{x^{(i)}}(x)
 $$
 
-![Sampling Methods](/assets/module-b/lecture-7/sampling-methods.png)
+![Sampling Methods](/assets/module-c/lecture-7/sampling-methods.png)
 
 ### Problem Setting
 A set of $N$ weighted particles represents the posterior:
@@ -329,7 +329,7 @@ $$
 - Update the weight by the score: $w_{t+1} \leftarrow w_t \times S$
 - The scan that aligns with the map well gets a high correlation score → high weight (the best-aligned particle wins)
 
-![Scan Correlation](/assets/module-b/lecture-7/scan-correlation.png)
+![Scan Correlation](/assets/module-c/lecture-7/scan-correlation.png)
 
 ### Step 3: Resampling
 Without resampling, weight concentrates on a few particles while the rest carry negligible weight (*particle degeneracy*).
@@ -339,7 +339,7 @@ Resampling redraws particles in proportion to their weights:
 - Over $N$ iterations the particle cloud concentrates around high-probability regions
 - Result: particles track the true posterior efficiently (Courtesy: Thrun, Burgard, Fox)
 
-![Resampling](/assets/module-b/lecture-7/resampling.png)
+![Resampling](/assets/module-c/lecture-7/resampling.png)
 
 ### Particle Filter Loop (Summary)
 1. **Predict**: propagate each particle through the motion model + noise (odometry)
