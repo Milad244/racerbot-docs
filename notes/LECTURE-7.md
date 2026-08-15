@@ -64,20 +64,25 @@ We approximate a distribution using two information sources:
 Probability describes how likely different outcomes are. Depending on whether the possible values are countable or continuous, we represent probability differently.
 
 - **Discrete:** the variable can take a countable set of values (e.g. a dice roll). We use a **probability mass function (PMF)** to assign a probability to each possible value:
-  $$
-  P(X=x)
-  $$
+
+$$
+P(X=x)
+$$
+
   where $X$ is the random variable and $x$ is a particular value it can take. For example, $P(X=3)$ means "the probability that the dice roll is 3." The probabilities of all possible values add up to $1$.
 
 - **Continuous:** the variable can take any value in a range (e.g. position). We use a **probability density function (PDF)** $f_X(x)$ to describe how probability is distributed.
   - The PDF itself is not a probability. Probability comes from the **area under the PDF** over an interval:
-    $$
-    P(a \leq X \leq b) = \int_a^b f_X(x)\,dx
-    $$
+
+$$
+P(a \leq X \leq b) = \int_a^b f_X(x)\,dx
+$$
+
   - The **cumulative distribution function (CDF)** gives the probability that $X$ is less than or equal to a given value:
-    $$
-    F_X(x) = P(X \leq x) = \int_{-\infty}^{x} f_X(t)\,dt
-    $$
+
+$$
+F_X(x) = P(X \leq x) = \int_{-\infty}^{x} f_X(t)\,dt
+$$
 
 ### Conditional Probability
 - $P(B \mid A)$: the chance of event $B$ when event $A$ has already happened ("probability of $B$ given $A$")
@@ -162,14 +167,16 @@ Two models drive the chain:
 
 ### Markov Property (conditional independence)
 - The current observation depends only on the current state:
-  $$
-  P(O_t \mid x_{1:t}, u_{1:t}) = P(O_t \mid x_t)
-  $$
+
+$$
+P(O_t \mid x_{1:t}, u_{1:t}) = P(O_t \mid x_t)
+$$
 
 - The current state depends only on the previous state and current control:
-  $$
-  P(x_t \mid x_{1:t-1}, u_{1:t}) = P(x_t \mid x_{t-1}, u_t)
-  $$
+
+$$
+P(x_t \mid x_{1:t-1}, u_{1:t}) = P(x_t \mid x_{t-1}, u_t)
+$$
 
 This is what collapses the full history into a simple recursion.
 
