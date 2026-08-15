@@ -19,11 +19,11 @@ $$
 \dot{x} = Ax + Bu, \quad y = Cx
 $$
 
-- **System Dynamic** (input → system): how control inputs $u$ (e.g. motor) drive the state
+- **System Dynamic** (state + input → state evolution): how control inputs $u$ and the current state $x$ determine how the state evolves
 - **Sensor Model** (system → output): how the state shows up as measurements $y$
   - Sensors: IMU (on VESC), LiDAR, GNSS (GPS), camera, ...
 
-State Estimation runs this pipeline *backwards*: use the control inputs and sensor outputs to estimate the internal state (e.g. the car's location).
+State Estimation runs this pipeline *backwards*: use the previous state, control inputs, and sensor outputs to estimate the internal state (e.g. the car's location).
 
 ![State Estimation Pipeline](/assets/module-c/lecture-7/state-estimation-pipeline.png)
 
@@ -32,8 +32,8 @@ State Estimation runs this pipeline *backwards*: use the control inputs and sens
 **Definition:** Calculate the current position of the car from a previous position, plus estimates of speed, heading (direction), and elapsed time.
 
 **Does it work?**
-- If we had perfectly accurate control inputs and a perfect kinematic model → it would be fine
-- But there is always uncertainty in the measurement and system model, which creates cumulative errors
+- If we had **perfectly accurate control inputs** and a **perfect kinematic model** → it would be fine
+- But there is always **uncertainty** in the measurement and system model, which creates **cumulative errors**
 
 Example: recall the VESC parameters tuned for the car. Can `ros2 topic echo /odom` give an accurate speed/position?
 
@@ -59,6 +59,25 @@ We approximate a distribution using two information sources:
 - **Observation** → **Correction** (pull the belief toward what the sensors see)
 
 ## Recap of Probability and Bayes Rule
+
+### Discrete and Continuous Probability
+Probability describes how likely different outcomes are. Depending on whether the possible values are countable or continuous, we represent probability differently.
+
+- **Discrete:** the variable can take a countable set of values (e.g. a dice roll). We use a **probability mass function (PMF)** to assign a probability to each possible value:
+  $$
+  P(X=x)
+  $$
+  where $X$ is the random variable and $x$ is a particular value it can take. For example, $P(X=3)$ means "the probability that the dice roll is 3." The probabilities of all possible values add up to $1$.
+
+- **Continuous:** the variable can take any value in a range (e.g. position). We use a **probability density function (PDF)** $f_X(x)$ to describe how probability is distributed.
+  - The PDF itself is not a probability. Probability comes from the **area under the PDF** over an interval:
+    $$
+    P(a \leq X \leq b) = \int_a^b f_X(x)\,dx
+    $$
+  - The **cumulative distribution function (CDF)** gives the probability that $X$ is less than or equal to a given value:
+    $$
+    F_X(x) = P(X \leq x) = \int_{-\infty}^{x} f_X(t)\,dt
+    $$
 
 ### Conditional Probability
 - $P(B \mid A)$: the chance of event $B$ when event $A$ has already happened ("probability of $B$ given $A$")
@@ -91,10 +110,8 @@ With $A$: evidence (observation), $B$: hypothesis (state):
 - **Posterior** $P(B \mid A)$: updated belief *after* the evidence is considered
 - **Evidence** $P(A)$: usually a normalization term so the posterior is a valid PDF
 
-![Bayes Rule](/assets/module-c/lecture-7/bayes-rule.png)
-
 ### Law of Total Probability
-Decompose a problem by conditioning on another variable.
+Decompose a probability by conditioning on mutually exclusive and exhaustive cases.
 
 - **Discrete case:** for mutually exclusive, exhaustive events $B_1, \dots, B_k$:
 
@@ -122,14 +139,16 @@ $$
 - Combining historical information → Recursive Bayes Filter
 - Combining multiple sensor measurements → Sensor Fusion
 
-The belief (posterior) over the robot state conditions on all past observations and controls:
+The belief (posterior) over the robot state is updated recursively using the previous belief, control inputs, and observations:
 
 $$
 \text{Bel}(x_t) = P(x_t \mid o_t, u_t, o_{t-1}, u_{t-1}, \dots)
 $$
 
 - $x_t$: robot state
-- $o_t$: current observation, $u_t$: control input, $o_{t-1}, \dots$: history of observations
+- $o_t$: current observation, $u_t$: control input
+- $o_{t-1}, \dots$: history of observations and controls
+- The previous state $x_{t-1}$ is incorporated through the recursive belief $Bel(x_{t-1})$
 
 ## Recursive Bayes Filter
 
@@ -143,16 +162,14 @@ Two models drive the chain:
 
 ### Markov Property (conditional independence)
 - The current observation depends only on the current state:
+  $$
+  P(O_t \mid x_{1:t}, u_{1:t}) = P(O_t \mid x_t)
+  $$
 
-$$
-P(O_t \mid x_1, \dots, x_t, u_1, \dots, u_t) = P(O_t \mid x_t)
-$$
-
-- The current state depends only on the previous state:
-
-$$
-P(x_t \mid x_1, \dots, x_{t-1}, u_1, \dots, u_{t-1}) = P(x_t \mid x_{t-1})
-$$
+- The current state depends only on the previous state and current control:
+  $$
+  P(x_t \mid x_{1:t-1}, u_{1:t}) = P(x_t \mid x_{t-1}, u_t)
+  $$
 
 This is what collapses the full history into a simple recursion.
 
