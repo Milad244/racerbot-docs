@@ -210,6 +210,42 @@ $$
 = \frac{P(o_t \mid o_{1:t-1}, x_t, u_{1:t})\,P(x_t \mid o_{1:t-1}, u_{1:t})}{P(o_t \mid o_{1:t-1}, u_{1:t})}
 $$
 
+<details>
+<summary>Bayes Rule: What gets swapped?</summary>
+
+Starting from Bayes Rule with additional context $C$:
+
+$$
+P(B \mid A,C)
+=
+\frac{P(A \mid B,C)\,P(B\mid C)}
+{P(A\mid C)}
+$$
+
+Here, $C$ stays fixed throughout. Bayes Rule:
+
+- **Swaps $A$ and $B$** in the first conditional:
+
+$$
+P(B\mid A,C) \rightarrow P(A\mid B,C)
+$$
+
+- **Keeps $P(B\mid C)$** as the prior
+- **Uses $P(A\mid C)$** as the normalization term
+
+For the Bayes filter:
+
+$$
+P(x_t\mid o_t,C)
+=
+\frac{P(o_t\mid x_t,C)\,P(x_t\mid C)}
+{P(o_t\mid C)}
+$$
+
+where $C$ represents the previous observations and controls.
+
+</details>
+
 Apply the Markov property to the likelihood ($o_t$ depends only on $x_t$):
 
 $$
@@ -232,6 +268,11 @@ This is why we use variants of the Bayes filter that make the math tractable.
 
 ## Variants of Bayes Filter
 
+The Bayes filter is general, but computing the belief exactly can be difficult. Different filters make different assumptions or approximations:
+
+- **Gaussian-based:** KF, EKF, UKF — represent the belief with a Gaussian
+- **Sampling-based:** PF — represent the belief with weighted samples
+
 ### Assume a Simple (Gaussian) Distribution
 - **Kalman Filter (KF)**, **Extended Kalman Filter (EKF)**, **Unscented Kalman Filter (UKF)**
 
@@ -240,9 +281,6 @@ Why Gaussians work so well:
 - **Self-conjugate:** a Gaussian likelihood with a Gaussian prior yields a Gaussian posterior
 
 → The distribution keeps the same form throughout propagation, giving an analytical solution.
-
-### Use a Sampling-Based Method
-- **Particle Filter (PF)**: represents complicated, non-Gaussian distributions with samples (covered below)
 
 ### KF Example
 - **State:** position of the car
@@ -270,6 +308,9 @@ When the noise is *not* Gaussian (e.g. GNSS in practice), the KF/EKF estimate de
 ![KF Non-Gaussian Noise](/assets/module-c/lecture-7/kf-non-gaussian.png)
 
 ## Particle Filter
+
+### Use a Sampling-Based Method
+- **Particle Filter (PF)**: represents complicated, non-Gaussian distributions with samples
 
 ### Idea
 Instead of restricting ourselves to parametric distributions, use a sample-based representation.
