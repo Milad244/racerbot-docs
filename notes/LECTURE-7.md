@@ -315,7 +315,7 @@ On a GNSS-tracked trajectory:
 ![EKF Trajectory](/assets/module-c/lecture-7/ekf-trajectory.png)
 
 ### Practical Problem of KF: Non-Gaussian Noise
-When the noise is *not* Gaussian (e.g. GNSS in practice), the KF/EKF estimate degrades, motivating the particle filter.
+When the noise is *not* Gaussian (e.g. GNSS in practice), the Gaussian filters (KF/EKF/UKF) can degrade, motivating the particle filter.
 
 ![KF Non-Gaussian Noise](/assets/module-c/lecture-7/kf-non-gaussian.png)
 
