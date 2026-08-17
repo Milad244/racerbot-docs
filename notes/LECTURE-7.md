@@ -301,9 +301,82 @@ Walkthrough:
 
 ### Distinction Between Gaussian Filters
 
-- **KF:** for linear systems with Gaussian uncertainty; directly propagates and updates the mean and covariance.
-- **EKF:** extends KF to nonlinear systems by approximating the nonlinear functions as linear around the current estimate.
-- **UKF:** extends KF to nonlinear systems by propagating a small set of representative points through the nonlinear functions instead of linearizing them.
+All three filters represent the belief as a Gaussian:
+
+$$
+x_t \sim \mathcal{N}(\hat{x}_t, P_t)
+$$
+
+- $x_t$: random variable representing the true state
+- $\hat{x}_t$: estimated state (the mean of the Gaussian)
+- $P_t$: covariance, representing uncertainty in the estimate
+
+All three repeatedly **predict → correct**, but differ in how they handle the system dynamics and measurements.
+
+#### KF
+For a **linear** system:
+
+$$
+x_{t+1} = A x_t + B u_t
+$$
+
+The Gaussian remains Gaussian, so the mean and covariance can be propagated and updated directly:
+
+$$
+\hat{x}_{t+1} = A\hat{x}_t + Bu_t,
+\qquad
+P_{t+1} = AP_tA^\top + Q
+$$
+
+$$
+(\hat{x}_t, P_t) \rightarrow (\hat{x}_{t+1}, P_{t+1})
+$$
+
+No approximation is needed under the linear/Gaussian assumptions.
+
+#### EKF
+For a **nonlinear** system:
+
+$$
+x_{t+1} = f(x_t, u_t)
+$$
+
+The EKF locally approximates the nonlinear function as linear around the current estimate, using a Jacobian. It can then perform a KF-like update:
+
+$$
+\text{nonlinear function}
+\rightarrow
+\text{local linear approximation}
+\rightarrow
+(\hat{x}_{t+1}, P_{t+1})
+$$
+
+This approximation can become inaccurate when the system is strongly nonlinear.
+
+#### UKF
+The UKF also handles **nonlinear** systems:
+
+$$
+x_{t+1} = f(x_t, u_t)
+$$
+
+Instead of linearizing $f$, it selects a small set of representative **sigma points (carefully chosen points that represent the Gaussian)** from the Gaussian, propagates them through the nonlinear function, and uses the resulting points to estimate the new mean and covariance:
+
+$$
+(\hat{x}_t,P_t)
+\rightarrow
+\text{sigma points}
+\rightarrow
+f(\text{sigma points})
+\rightarrow
+(\hat{x}_{t+1},P_{t+1})
+$$
+
+So the main distinction is:
+
+- **KF:** linear system → directly propagate the Gaussian
+- **EKF:** nonlinear system → locally linearize it
+- **UKF:** nonlinear system → propagate representative points through it
 
 ### EKF Example
 - **GNSS** (Global Navigation Satellite System) → position measurements (e.g., GPS)
@@ -323,10 +396,10 @@ When the noise is *not* Gaussian (e.g. GNSS in practice), the Gaussian filters (
 
 ### Use a Sampling-Based Method
 
-- **Particle Filter (PF)**: represents complicated, non-Gaussian distributions with samples (covered below)
+- **Particle Filter (PF)**: represents complicated, non-Gaussian distributions with samples
 
 ### Idea
-Instead of restricting ourselves to parametric distributions, use a sample-based representation.
+Instead of assuming a specific distribution shape (e.g. a Gaussian), use a sample-based representation.
 
 - **Monte Carlo method:** rely on repeated random sampling to obtain numerical results
 - **Advantage:** can approximate complicated distributions
