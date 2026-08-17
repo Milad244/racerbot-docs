@@ -287,15 +287,27 @@ Why Gaussians work so well:
 - **Observation:** sensor measurement to a pole
 - **Assumption:** both state and observation are Gaussian
 
+![KF Example](/assets/module-c/lecture-7/kf-example.png)
+
 Walkthrough:
 - **[Fig1]** Initial knowledge at $T=0$ (known initial velocity)
 - **[Fig2]** Prediction at $T=1$: the action model adds uncertainty → the position Gaussian gets wider (confidence decreases)
 - **[Fig3]** A noisy measurement at $T=1$ (its own Gaussian)
 - **[Fig4]** Multiply the prediction and measurement PDFs → fused estimate that is sharper than either alone
 
-![KF Gaussian Fusion](/assets/module-c/lecture-7/kf-gaussian-fusion.png)
+![KF Gaussian Fusion 1](/assets/module-c/lecture-7/kf-gaussian-fusion-1.png)
+
+![KF Gaussian Fusion 2](/assets/module-c/lecture-7/kf-gaussian-fusion-2.png)
+
+### Distinction Between Gaussian Filters
+
+- **KF:** for linear systems with Gaussian uncertainty; directly propagates and updates the mean and covariance.
+- **EKF:** extends KF to nonlinear systems by approximating the nonlinear functions as linear around the current estimate.
+- **UKF:** extends KF to nonlinear systems by propagating a small set of representative points through the nonlinear functions instead of linearizing them.
 
 ### EKF Example
+- **GNSS** (Global Navigation Satellite System) → position measurements (e.g., GPS)
+
 On a GNSS-tracked trajectory:
 - Blue = true trajectory, Black = dead reckoning, Green = GNSS observations
 - Red line = EKF estimate, Red ellipse = EKF covariance estimate
@@ -310,7 +322,8 @@ When the noise is *not* Gaussian (e.g. GNSS in practice), the KF/EKF estimate de
 ## Particle Filter
 
 ### Use a Sampling-Based Method
-- **Particle Filter (PF)**: represents complicated, non-Gaussian distributions with samples
+
+- **Particle Filter (PF)**: represents complicated, non-Gaussian distributions with samples (covered below)
 
 ### Idea
 Instead of restricting ourselves to parametric distributions, use a sample-based representation.
