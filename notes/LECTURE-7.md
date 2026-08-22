@@ -219,12 +219,8 @@ Bayes Rule swaps $A$ and $B$ in the conditional while keeping $C$ fixed.
 
 </details>
 
-$$
-P(B \mid A,C)
-=
-\frac{P(A \mid B,C)\,P(B\mid C)}
-{P(A\mid C)}
-$$
+
+$$P(B \mid A,C)=\frac{P(A \mid B,C)\,P(B\mid C)}{P(A\mid C)}$$
 
 Apply the Markov property to the likelihood ($o_t$ depends only on $x_t$):
 
@@ -323,9 +319,7 @@ $$
 The KF compares the actual observation with the predicted observation:
 
 $$
-o_{t+1} - \hat{o}_{t+1}
-=
-o_{t+1} - C\hat{x}_{t+1}^{-}
+o_{t+1} - \hat{o}_{t+1}=o_{t+1} - C\hat{x}_{t+1}^{-}
 $$
 
 and uses this difference, together with the uncertainty $P_{t+1}^-$ and sensor noise covariance $R$, to update the mean and covariance:
