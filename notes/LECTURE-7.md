@@ -317,20 +317,46 @@ All three repeatedly **predict → correct**, but differ in how they handle the 
 For a **linear** system:
 
 $$
-x_{t+1} = A x_t + B u_t
+x_{t+1} = A x_t + B u_t + w_t
 $$
 
 The Gaussian remains Gaussian, so the mean and covariance can be propagated and updated directly:
 
 $$
-\hat{x}_{t+1} = A\hat{x}_t + Bu_t,
+\hat{x}_{t+1}^- = A\hat{x}_t + Bu_t,
 \qquad
-P_{t+1} = AP_tA^\top + Q
+P_{t+1}^- = AP_tA^\top + Q
 $$
 
+The correction uses the sensor model:
+
 $$
-(\hat{x}_t, P_t) \rightarrow (\hat{x}_{t+1}, P_{t+1})
+o_{t+1} = Cx_{t+1} + v_{t+1}
 $$
+
+so the predicted sensor observation is:
+
+$$
+\hat{o}_{t+1} = C\hat{x}_{t+1}^-
+$$
+
+The KF compares the actual observation with the predicted observation:
+
+$$
+o_{t+1} - \hat{o}_{t+1}
+=
+o_{t+1} - C\hat{x}_{t+1}^-
+$$
+
+and uses this difference, together with the uncertainty $P_{t+1}^-$ and sensor noise covariance $R$, to update the mean and covariance:
+
+$$
+(\hat{x}_{t+1}^-,P_{t+1}^-)
+\rightarrow
+(\hat{x}_{t+1},P_{t+1})
+$$
+
+This is the KF's closed-form version of the Bayes correction: instead of checking individual possible states, it analytically updates the entire Gaussian.
 
 No approximation is needed under the linear/Gaussian assumptions.
 
