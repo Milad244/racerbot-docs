@@ -468,7 +468,7 @@ In localization:
 Push each particle through the system dynamics with noise:
 
 $$
-x_{k+1}^{(i)} = f\!\left(x_k^{(i)}, u_k\right) + \epsilon_k
+x_{k+1}^{(i)} = f(x_k^{(i)}, u_k) + \epsilon_k
 $$
 
 - $f(x_k, u_k)$: system dynamic function (same role as the action model)
@@ -488,7 +488,43 @@ $$
 w_{k+1}^{(i)} \propto P\!\left(o_{k+1} \mid x_{k+1}^{(i)}\right)
 $$
 
-In localization: update the particle cloud with the odometry motion, then run scan matching for each particle to determine weights.
+The ordinary Bayes Filter does:
+
+$$
+\text{previous belief}
+\xrightarrow{\text{prediction}}
+\text{predicted belief}
+\xrightarrow{\text{observation}}
+\text{corrected belief}
+$$
+
+The Particle Filter does the same thing:
+
+$$
+\text{weighted particles}
+\xrightarrow{\text{motion model}}
+\text{new particles}
+\xrightarrow{\text{sensor likelihood}}
+\text{new weights}
+$$
+
+**Note:** After correction, a standard Particle Filter usually **normalizes the weights and resamples**. Resampling removes very-low-weight particles and duplicates high-weight particles, concentrating computational effort in likely regions.
+
+So the full loop is:
+
+$$
+\text{Predict}
+\rightarrow
+\text{Weight}
+\rightarrow
+\text{Normalize}
+\rightarrow
+\text{Resample}
+\rightarrow
+\text{repeat}
+$$
+
+This is the core Particle Filter loop.
 
 ### Scan Correlation
 Score how well a particle's predicted scan matches the actual map using a 2D correlation:
