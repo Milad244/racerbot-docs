@@ -482,10 +482,10 @@ x_{k+1}^{(i)} \sim p(x_{k+1} \mid x_k, u_k)
 $$
 
 ### Step 2: Correction (with the observation)
-Given a new observation, update each particle's weight by the likelihood of that observation:
+Given a new observation, update each particle's weight using its previous weight and the likelihood of that observation:
 
 $$
-w_{k+1}^{(i)} \propto p(o_{k+1} \mid x_{k+1}^{(i)})
+w_{k+1}^{(i)} \propto w_k^{(i)}p(o_{k+1} \mid x_{k+1}^{(i)})
 $$
 
 The ordinary Bayes Filter does:
@@ -508,7 +508,72 @@ $$
 \text{new weights}
 $$
 
-**Note:** After correction, a standard Particle Filter usually **normalizes the weights and resamples**. Resampling removes very-low-weight particles and duplicates high-weight particles, concentrating computational effort in likely regions.
+#### Scan Correlation (part of step 2)
+
+After **prediction**, each particle represents a possible robot pose. For each particle, we compare the LiDAR scan predicted from that pose with the known map to determine how well that pose agrees with the observation.
+
+$$
+S = \frac{\sum_m \sum_n (A_{mn} - \bar{A})(B_{mn} - \bar{B})}{\sqrt{\left(\sum_m \sum_n (A_{mn} - \bar{A})^2\right)\left(\sum_m \sum_n (B_{mn} - \bar{B})^2\right)}}
+$$
+
+- $A$: the relevant section of the actual map around the particle's predicted pose
+- $B$: occupancy map produced from the particle's predicted scan
+- $A_{mn}$, $B_{mn}$: corresponding cells in the two maps
+- $\bar{A}$, $\bar{B}$: the mean cell value of each map
+- $S$: correlation score; higher $S$ means the scan aligns better with the map
+
+The map section $A$ is chosen based on the particle's **predicted pose**, so the scan and map are compared in the same location.
+
+$$
+A_{mn} =
+\begin{cases}
+1, & \text{wall} \\
+0, & \text{free space}
+\end{cases}
+$$
+
+- Update the particle's weight using its scan score:
+
+$$
+w_{t+1}^{(i)} \leftarrow w_t^{(i)}S^{(i)}
+$$
+
+Here, $\leftarrow$ means **update/replace with**. A particle whose predicted scan aligns well with the map gets a higher weight, while a poorly aligned particle gets a lower weight.
+
+![Scan Correlation](/assets/module-c/lecture-7/scan-correlation.png)
+
+### Step 3: Normalize the weights
+
+After updating the weights, normalize them so they form a probability distribution:
+
+$$
+w_{k+1}^{(i)} \leftarrow
+\frac{w_{k+1}^{(i)}}{\sum_{j=1}^{N} w_{k+1}^{(j)}}
+$$
+
+Now:
+
+$$
+\sum_{i=1}^{N} w_{k+1}^{(i)} = 1
+$$
+
+This makes the weights interpretable as the relative probabilities of the particles and allows them to be used for resampling.
+
+### Step 4: Resampling
+Without resampling, weight concentrates on a few particles while the rest carry negligible weight (*particle degeneracy*).
+
+Resampling redraws particles in proportion to their weights:
+- High-weight particles are duplicated; low-weight particles die off
+- Over $N$ iterations the particle cloud concentrates around high-probability regions
+- Result: particles track the true posterior efficiently (Courtesy: Thrun, Burgard, Fox)
+
+![Resampling](/assets/module-c/lecture-7/resampling.png)
+
+### Particle Filter Loop (Summary)
+1. **Predict**: propagate each particle through the motion model + noise (odometry)
+2. **Correct/Weight**: weight each particle by the observation likelihood (scan correlation vs. map)
+3. **Normalize**: normalize the particle weights so they sum to 1
+4. **Resample**: redraw particles according to their weights
 
 So the full loop is:
 
@@ -523,41 +588,6 @@ $$
 \rightarrow
 \text{repeat}
 $$
-
-This is the core Particle Filter loop.
-
-### Scan Correlation
-Score how well a particle's predicted scan matches the actual map using a 2D correlation:
-
-$$
-S = \frac{\sum_m \sum_n (A_{mn} - \bar{A})(B_{mn} - \bar{B})}{\sqrt{\left(\sum_m \sum_n (A_{mn} - \bar{A})^2\right)\left(\sum_m \sum_n (B_{mn} - \bar{B})^2\right)}}
-$$
-
-- $A$: actual map, $B$: occupancy map from the scan, with
-
-$$
-A_{mn} = \begin{cases} 1, & \text{wall} \\ 0, & \text{free space} \end{cases}
-$$
-
-- Update the weight by the score: $w_{t+1} \leftarrow w_t \times S$
-- The scan that aligns with the map well gets a high correlation score → high weight (the best-aligned particle wins)
-
-![Scan Correlation](/assets/module-c/lecture-7/scan-correlation.png)
-
-### Step 3: Resampling
-Without resampling, weight concentrates on a few particles while the rest carry negligible weight (*particle degeneracy*).
-
-Resampling redraws particles in proportion to their weights:
-- High-weight particles are duplicated; low-weight particles die off
-- Over $N$ iterations the particle cloud concentrates around high-probability regions
-- Result: particles track the true posterior efficiently (Courtesy: Thrun, Burgard, Fox)
-
-![Resampling](/assets/module-c/lecture-7/resampling.png)
-
-### Particle Filter Loop (Summary)
-1. **Predict**: propagate each particle through the motion model + noise (odometry)
-2. **Correct**: weight each particle by the observation likelihood (scan correlation vs. map)
-3. **Resample**: redraw particles according to weight
 
 ## Interpretation of Bayes Rule (Mapping Example)
 Using $\text{posterior} = \dfrac{\text{likelihood} \times \text{prior}}{\text{evidence}}$, $\quad P(B \mid A) = \dfrac{P(A \mid B)P(B)}{P(A)}$:
