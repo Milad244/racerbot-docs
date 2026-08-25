@@ -413,16 +413,42 @@ Instead of assuming a specific distribution shape (e.g. a Gaussian), use a sampl
 - Issue: inefficient, many particles get thrown away
 
 **Weighted samples (importance sampling):**
-- Draw samples from an easier proposal distribution $q$, then weight by the target $p$:
+- We want to approximate a target distribution $p(x)$, but instead of sampling directly from it, we sample from an easier **proposal distribution** $q(x)$:
 
 $$
-w_i = \frac{p(x_i)}{q(x_i)}
+x^{(i)} \sim q(x)
 $$
 
-- The target distribution is approximated as a sum of weighted Dirac deltas:
+- Each sampled $x^{(i)}$ is a possible value of the state. We then evaluate both distributions at that sampled value and compute its weight:
 
 $$
-p(x) \approx \sum_{i=1}^{n} w^{(i)}\,\delta_{x^{(i)}}(x)
+w^{(i)} = \frac{p(x^{(i)})}{q(x^{(i)})}
+$$
+
+  - $x^{(i)}$: the $i$-th sampled state
+- $q(x^{(i)})$: how likely the proposal was to generate that state; dividing by it corrects for the proposal's sampling bias
+- $p(x^{(i)})$: the target distribution **evaluated at that particular state** $x^{(i)}$; we can often compute this without explicitly constructing the entire target distribution $p(x)$
+- $p(x)$: the **entire target distribution** that we are trying to approximate with our particles; we don't need to calculate/store the whole distribution explicitly
+- $w^{(i)}$: how important the sampled state should be, based on how likely it is under $p$ relative to $q$
+
+
+The Dirac delta $\delta(x-a)$ represents an idealized spike located exactly at $x=a$:
+
+- Here, $\delta(x-x^{(i)})$ is equivalent to the lecture's notation $\delta_{x^{(i)}}(x)$; both represent a Dirac delta located at $x^{(i)}$.
+- $\delta(x-a)=0$ everywhere except at $x=a$
+- The spike has zero width and unbounded height at $x=a$
+- The total area under the spike is exactly $1$:
+
+$$
+\int_{-\infty}^{\infty}\delta(x-a)\,dx=1
+$$
+
+So $\delta(x-a)$ represents **one unit of probability concentrated at exactly $x=a$**; multiplying it by $w^{(i)}$ gives a point mass with weight $w^{(i)}$.
+
+This means that we approximate the **entire distribution $p(x)$** using these weighted particles, rather than repeatedly calculating the distribution everywhere.
+
+$$
+p(x) \approx \sum_{i=1}^{n} w^{(i)}\,\delta(x-x^{(i)})
 $$
 
 ![Sampling Methods](/assets/module-c/lecture-7/sampling-methods.png)
