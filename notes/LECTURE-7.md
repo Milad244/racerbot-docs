@@ -8,8 +8,7 @@ Lesson plan:
 1. Introduction to State Estimation
 2. Recap of Probability and Bayes Rule
 3. Recursive Bayes Filter
-4. Variants of Bayes Filter: KF, Particle Filter
-5. Running Particle Filter in ROS2
+4. Variants of the Bayes Filter: KF/EKF/UKF and Particle Filter
 
 ## State Estimation
 
