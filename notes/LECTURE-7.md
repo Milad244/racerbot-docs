@@ -478,14 +478,14 @@ $$
 Equivalent to drawing samples from the proposal distribution:
 
 $$
-x_{k+1}^{[i]} \sim p\!\left(x_{k+1} \mid x_k, u_k\right)
+x_{k+1}^{(i)} \sim p(x_{k+1} \mid x_k, u_k)
 $$
 
 ### Step 2: Correction (with the observation)
 Given a new observation, update each particle's weight by the likelihood of that observation:
 
 $$
-w_{k+1}^{(i)} \propto P\!\left(o_{k+1} \mid x_{k+1}^{(i)}\right)
+w_{k+1}^{(i)} \propto p(o_{k+1} \mid x_{k+1}^{(i)})
 $$
 
 The ordinary Bayes Filter does:
