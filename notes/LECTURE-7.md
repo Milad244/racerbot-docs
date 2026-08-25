@@ -535,7 +535,7 @@ $$
 - Update the particle's weight using its scan score:
 
 $$
-w_{t+1}^{(i)} \leftarrow w_t^{(i)}S^{(i)}
+w_{k+1}^{(i)} \leftarrow w_k^{(i)}S^{(i)}
 $$
 
 Here, $\leftarrow$ means **update/replace with**. A particle whose predicted scan aligns well with the map gets a higher weight, while a poorly aligned particle gets a lower weight.
@@ -588,18 +588,6 @@ $$
 \rightarrow
 \text{repeat}
 $$
-
-## Interpretation of Bayes Rule (Mapping Example)
-Using $\text{posterior} = \dfrac{\text{likelihood} \times \text{prior}}{\text{evidence}}$, $\quad P(B \mid A) = \dfrac{P(A \mid B)P(B)}{P(A)}$:
-
-- $B$: there is an obstacle at $x = 2$
-- $A$: the LiDAR detects the obstacle
-- $P(A)$: uncertainty from the LiDAR measurement
-- $P(A \mid B)$: uncertainty from the position of the car
-- $P(B)$: prior knowledge (is there a wall at $x = 2$?)
-- $P(B \mid A)$: given the LiDAR observation, the probability of $B$
-
-Open question: how do we get the prior knowledge? → mapping.
 
 ## Localization: "Where am I?"
 Fuse two noisy information sources to estimate pose:
