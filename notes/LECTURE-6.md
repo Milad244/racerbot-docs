@@ -176,18 +176,22 @@ Described via Ordinary Differential Equations (ODEs)
 
 - System Dynamics:
   - The behavior over time of the states as a reaction to the inputs and the initial state
+
 $$
 \dot{x} = Ax + Bu
 $$
+
 - $A$: system matrix (how states affect each other)
 - $B$: input matrix (how input affects the state)
 - $\dot{x}$: time derivative of the state
 
 - Output Equation:
   - Describes the relation between the state and the output
+
 $$
 y = Cx
 $$
+
 - $C$: output matrix (maps state to measured output)
 
 ## Single Track Model

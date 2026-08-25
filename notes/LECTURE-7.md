@@ -8,8 +8,7 @@ Lesson plan:
 1. Introduction to State Estimation
 2. Recap of Probability and Bayes Rule
 3. Recursive Bayes Filter
-4. Variants of Bayes Filter: KF, Particle Filter
-5. Running Particle Filter in ROS2
+4. Variants of the Bayes Filter: KF/EKF/UKF and Particle Filter
 
 ## State Estimation
 
@@ -19,11 +18,11 @@ $$
 \dot{x} = Ax + Bu, \quad y = Cx
 $$
 
-- **System Dynamic** (input → system): how control inputs $u$ (e.g. motor) drive the state
+- **System Dynamic** (state + input → state evolution): how control inputs $u$ and the current state $x$ determine how the state evolves
 - **Sensor Model** (system → output): how the state shows up as measurements $y$
   - Sensors: IMU (on VESC), LiDAR, GNSS (GPS), camera, ...
 
-State Estimation runs this pipeline *backwards*: use the control inputs and sensor outputs to estimate the internal state (e.g. the car's location).
+State Estimation runs this pipeline *backwards*: use the previous state, control inputs, and sensor outputs to estimate the internal state (e.g. the car's location).
 
 ![State Estimation Pipeline](/assets/module-c/lecture-7/state-estimation-pipeline.png)
 
@@ -32,8 +31,8 @@ State Estimation runs this pipeline *backwards*: use the control inputs and sens
 **Definition:** Calculate the current position of the car from a previous position, plus estimates of speed, heading (direction), and elapsed time.
 
 **Does it work?**
-- If we had perfectly accurate control inputs and a perfect kinematic model → it would be fine
-- But there is always uncertainty in the measurement and system model, which creates cumulative errors
+- If we had **perfectly accurate control inputs** and a **perfect kinematic model** → it would be fine
+- But there is always **uncertainty** in the measurement and system model, which creates **cumulative errors**
 
 Example: recall the VESC parameters tuned for the car. Can `ros2 topic echo /odom` give an accurate speed/position?
 
@@ -59,6 +58,30 @@ We approximate a distribution using two information sources:
 - **Observation** → **Correction** (pull the belief toward what the sensors see)
 
 ## Recap of Probability and Bayes Rule
+
+### Discrete and Continuous Probability
+Probability describes how likely different outcomes are. Depending on whether the possible values are countable or continuous, we represent probability differently.
+
+- **Discrete:** the variable can take a countable set of values (e.g. a dice roll). We use a **probability mass function (PMF)** to assign a probability to each possible value:
+
+$$
+P(X=x)
+$$
+
+  where $X$ is the random variable and $x$ is a particular value it can take. For example, $P(X=3)$ means "the probability that the dice roll is 3." The probabilities of all possible values add up to $1$.
+
+- **Continuous:** the variable can take any value in a range (e.g. position). We use a **probability density function (PDF)** $f_X(x)$ to describe how probability is distributed.
+  - The PDF itself is not a probability. Probability comes from the **area under the PDF** over an interval:
+
+$$
+P(a \leq X \leq b) = \int_a^b f_X(x)\,dx
+$$
+
+  - The **cumulative distribution function (CDF)** gives the probability that $X$ is less than or equal to a given value:
+
+$$
+F_X(x) = P(X \leq x) = \int_{-\infty}^{x} f_X(t)\,dt
+$$
 
 ### Conditional Probability
 - $P(B \mid A)$: the chance of event $B$ when event $A$ has already happened ("probability of $B$ given $A$")
@@ -91,10 +114,8 @@ With $A$: evidence (observation), $B$: hypothesis (state):
 - **Posterior** $P(B \mid A)$: updated belief *after* the evidence is considered
 - **Evidence** $P(A)$: usually a normalization term so the posterior is a valid PDF
 
-![Bayes Rule](/assets/module-c/lecture-7/bayes-rule.png)
-
 ### Law of Total Probability
-Decompose a problem by conditioning on another variable.
+Decompose a probability by conditioning on mutually exclusive and exhaustive cases.
 
 - **Discrete case:** for mutually exclusive, exhaustive events $B_1, \dots, B_k$:
 
@@ -122,14 +143,16 @@ $$
 - Combining historical information → Recursive Bayes Filter
 - Combining multiple sensor measurements → Sensor Fusion
 
-The belief (posterior) over the robot state conditions on all past observations and controls:
+The belief (posterior) over the robot state is updated recursively using the previous belief, control inputs, and observations:
 
 $$
 \text{Bel}(x_t) = P(x_t \mid o_t, u_t, o_{t-1}, u_{t-1}, \dots)
 $$
 
 - $x_t$: robot state
-- $o_t$: current observation, $u_t$: control input, $o_{t-1}, \dots$: history of observations
+- $o_t$: current observation, $u_t$: control input
+- $o_{t-1}, \dots$: history of observations and controls
+- The previous state $x_{t-1}$ is incorporated through the recursive belief $Bel(x_{t-1})$
 
 ## Recursive Bayes Filter
 
@@ -145,13 +168,13 @@ Two models drive the chain:
 - The current observation depends only on the current state:
 
 $$
-P(O_t \mid x_1, \dots, x_t, u_1, \dots, u_t) = P(O_t \mid x_t)
+P(O_t \mid x_{1:t}, u_{1:t}) = P(O_t \mid x_t)
 $$
 
-- The current state depends only on the previous state:
+- The current state depends only on the previous state and current control:
 
 $$
-P(x_t \mid x_1, \dots, x_{t-1}, u_1, \dots, u_{t-1}) = P(x_t \mid x_{t-1})
+P(x_t \mid x_{1:t-1}, u_{1:t}) = P(x_t \mid x_{t-1}, u_t)
 $$
 
 This is what collapses the full history into a simple recursion.
@@ -186,6 +209,18 @@ $$
 = \frac{P(o_t \mid o_{1:t-1}, x_t, u_{1:t})\,P(x_t \mid o_{1:t-1}, u_{1:t})}{P(o_t \mid o_{1:t-1}, u_{1:t})}
 $$
 
+<details>
+<summary>Bayes Rule: What gets swapped?</summary>
+
+Starting from Bayes Rule with additional context $C$:
+
+Bayes Rule swaps $A$ and $B$ in the conditional while keeping $C$ fixed.
+
+</details>
+
+
+$$P(B \mid A,C)=\frac{P(A \mid B,C)\,P(B\mid C)}{P(A\mid C)}$$
+
 Apply the Markov property to the likelihood ($o_t$ depends only on $x_t$):
 
 $$
@@ -208,6 +243,11 @@ This is why we use variants of the Bayes filter that make the math tractable.
 
 ## Variants of Bayes Filter
 
+The Bayes filter is general, but computing the belief exactly can be difficult. Different filters make different assumptions or approximations:
+
+- **Gaussian-based:** KF, EKF, UKF — represent the belief with a Gaussian
+- **Sampling-based:** PF — represent the belief with weighted samples
+
 ### Assume a Simple (Gaussian) Distribution
 - **Kalman Filter (KF)**, **Extended Kalman Filter (EKF)**, **Unscented Kalman Filter (UKF)**
 
@@ -217,13 +257,12 @@ Why Gaussians work so well:
 
 → The distribution keeps the same form throughout propagation, giving an analytical solution.
 
-### Use a Sampling-Based Method
-- **Particle Filter (PF)**: represents complicated, non-Gaussian distributions with samples (covered below)
-
 ### KF Example
 - **State:** position of the car
 - **Observation:** sensor measurement to a pole
 - **Assumption:** both state and observation are Gaussian
+
+![KF Example](/assets/module-c/lecture-7/kf-example.png)
 
 Walkthrough:
 - **[Fig1]** Initial knowledge at $T=0$ (known initial velocity)
@@ -231,9 +270,116 @@ Walkthrough:
 - **[Fig3]** A noisy measurement at $T=1$ (its own Gaussian)
 - **[Fig4]** Multiply the prediction and measurement PDFs → fused estimate that is sharper than either alone
 
-![KF Gaussian Fusion](/assets/module-c/lecture-7/kf-gaussian-fusion.png)
+![KF Gaussian Fusion 1](/assets/module-c/lecture-7/kf-gaussian-fusion-1.png)
+
+![KF Gaussian Fusion 2](/assets/module-c/lecture-7/kf-gaussian-fusion-2.png)
+
+### Distinction Between Gaussian Filters
+
+All three filters represent the belief as a Gaussian:
+
+$$
+x_t \sim \mathcal{N}(\hat{x}_t, P_t)
+$$
+
+- $x_t$: random variable representing the true state
+- $\hat{x}_t$: estimated state (the mean of the Gaussian)
+- $P_t$: covariance, representing uncertainty in the estimate
+
+All three repeatedly **predict → correct**, but differ in how they handle the system dynamics and measurements.
+
+#### KF
+For a **linear** system:
+
+$$
+x_{t+1} = A x_t + B u_t + w_t
+$$
+
+The Gaussian remains Gaussian, so the mean and covariance can be propagated and updated directly:
+
+$$
+\hat{x}_{t+1}^- = A\hat{x}_t + Bu_t,
+\qquad
+P_{t+1}^- = AP_tA^\top + Q
+$$
+
+The correction uses the sensor model:
+
+$$
+o_{t+1} = Cx_{t+1} + v_{t+1}
+$$
+
+so the predicted sensor observation is:
+
+$$
+\hat{o}_{t+1} = C\hat{x}_{t+1}^-
+$$
+
+The KF compares the actual observation with the predicted observation:
+
+$$
+o_{t+1} - \hat{o}_{t+1}=o_{t+1} - C\hat{x}_{t+1}^{-}
+$$
+
+and uses this difference, together with the uncertainty $P_{t+1}^-$ and sensor noise covariance $R$, to update the mean and covariance:
+
+$$
+(\hat{x}_{t+1}^-,P_{t+1}^-)
+\rightarrow
+(\hat{x}_{t+1},P_{t+1})
+$$
+
+This is the KF's closed-form version of the Bayes correction: instead of checking individual possible states, it analytically updates the entire Gaussian.
+
+No approximation is needed under the linear/Gaussian assumptions.
+
+#### EKF
+For a **nonlinear** system:
+
+$$
+x_{t+1} = f(x_t, u_t)
+$$
+
+The EKF locally approximates the nonlinear function as linear around the current estimate, using a Jacobian. It can then perform a KF-like update:
+
+$$
+\text{nonlinear function}
+\rightarrow
+\text{local linear approximation}
+\rightarrow
+(\hat{x}_{t+1}, P_{t+1})
+$$
+
+This approximation can become inaccurate when the system is strongly nonlinear.
+
+#### UKF
+The UKF also handles **nonlinear** systems:
+
+$$
+x_{t+1} = f(x_t, u_t)
+$$
+
+Instead of linearizing $f$, it selects a small set of representative **sigma points (carefully chosen points that represent the Gaussian)** from the Gaussian, propagates them through the nonlinear function, and uses the resulting points to estimate the new mean and covariance:
+
+$$
+(\hat{x}_t,P_t)
+\rightarrow
+\text{sigma points}
+\rightarrow
+f(\text{sigma points})
+\rightarrow
+(\hat{x}_{t+1},P_{t+1})
+$$
+
+So the main distinction is:
+
+- **KF:** linear system → directly propagate the Gaussian
+- **EKF:** nonlinear system → locally linearize it
+- **UKF:** nonlinear system → propagate representative points through it
 
 ### EKF Example
+- **GNSS** (Global Navigation Satellite System) → position measurements (e.g., GPS)
+
 On a GNSS-tracked trajectory:
 - Blue = true trajectory, Black = dead reckoning, Green = GNSS observations
 - Red line = EKF estimate, Red ellipse = EKF covariance estimate
@@ -241,14 +387,18 @@ On a GNSS-tracked trajectory:
 ![EKF Trajectory](/assets/module-c/lecture-7/ekf-trajectory.png)
 
 ### Practical Problem of KF: Non-Gaussian Noise
-When the noise is *not* Gaussian (e.g. GNSS in practice), the KF/EKF estimate degrades, motivating the particle filter.
+When the noise is *not* Gaussian (e.g. GNSS in practice), the Gaussian filters (KF/EKF/UKF) can degrade, motivating the particle filter.
 
 ![KF Non-Gaussian Noise](/assets/module-c/lecture-7/kf-non-gaussian.png)
 
 ## Particle Filter
 
+### Use a Sampling-Based Method
+
+- **Particle Filter (PF)**: represents complicated, non-Gaussian distributions with samples
+
 ### Idea
-Instead of restricting ourselves to parametric distributions, use a sample-based representation.
+Instead of assuming a specific distribution shape (e.g. a Gaussian), use a sample-based representation.
 
 - **Monte Carlo method:** rely on repeated random sampling to obtain numerical results
 - **Advantage:** can approximate complicated distributions
@@ -262,16 +412,42 @@ Instead of restricting ourselves to parametric distributions, use a sample-based
 - Issue: inefficient, many particles get thrown away
 
 **Weighted samples (importance sampling):**
-- Draw samples from an easier proposal distribution $q$, then weight by the target $p$:
+- We want to approximate a target distribution $p(x)$, but instead of sampling directly from it, we sample from an easier **proposal distribution** $q(x)$:
 
 $$
-w_i = \frac{p(x_i)}{q(x_i)}
+x^{(i)} \sim q(x)
 $$
 
-- The target distribution is approximated as a sum of weighted Dirac deltas:
+- Each sampled $x^{(i)}$ is a possible value of the state. We then evaluate both distributions at that sampled value and compute its weight:
 
 $$
-p(x) \approx \sum_{i=1}^{n} w^{(i)}\,\delta_{x^{(i)}}(x)
+w^{(i)} = \frac{p(x^{(i)})}{q(x^{(i)})}
+$$
+
+  - $x^{(i)}$: the $i$-th sampled state
+- $q(x^{(i)})$: how likely the proposal was to generate that state; dividing by it corrects for the proposal's sampling bias
+- $p(x^{(i)})$: the target distribution **evaluated at that particular state** $x^{(i)}$; we can often compute this without explicitly constructing the entire target distribution $p(x)$
+- $p(x)$: the **entire target distribution** that we are trying to approximate with our particles; we don't need to calculate/store the whole distribution explicitly
+- $w^{(i)}$: how important the sampled state should be, based on how likely it is under $p$ relative to $q$
+
+
+The Dirac delta $\delta(x-a)$ represents an idealized spike located exactly at $x=a$:
+
+- Here, $\delta(x-x^{(i)})$ is equivalent to the lecture's notation $\delta_{x^{(i)}}(x)$; both represent a Dirac delta located at $x^{(i)}$.
+- $\delta(x-a)=0$ everywhere except at $x=a$
+- The spike has zero width and unbounded height at $x=a$
+- The total area under the spike is exactly $1$:
+
+$$
+\int_{-\infty}^{\infty}\delta(x-a)\,dx=1
+$$
+
+So $\delta(x-a)$ represents **one unit of probability concentrated at exactly $x=a$**; multiplying it by $w^{(i)}$ gives a point mass with weight $w^{(i)}$.
+
+This means that we approximate the **entire distribution $p(x)$** using these weighted particles, rather than repeatedly calculating the distribution everywhere.
+
+$$
+p(x) \approx \sum_{i=1}^{n} w^{(i)}\,\delta(x-x^{(i)})
 $$
 
 ![Sampling Methods](/assets/module-c/lecture-7/sampling-methods.png)
@@ -291,7 +467,7 @@ In localization:
 Push each particle through the system dynamics with noise:
 
 $$
-x_{k+1}^{(i)} = f\!\left(x_k^{(i)}, u_k\right) + \epsilon_k
+x_{k+1}^{(i)} = f(x_k^{(i)}, u_k) + \epsilon_k
 $$
 
 - $f(x_k, u_k)$: system dynamic function (same role as the action model)
@@ -301,37 +477,88 @@ $$
 Equivalent to drawing samples from the proposal distribution:
 
 $$
-x_{k+1}^{[i]} \sim p\!\left(x_{k+1} \mid x_k, u_k\right)
+x_{k+1}^{(i)} \sim p(x_{k+1} \mid x_k, u_k)
 $$
 
 ### Step 2: Correction (with the observation)
-Given a new observation, update each particle's weight by the likelihood of that observation:
+Given a new observation, update each particle's weight using its previous weight and the likelihood of that observation:
 
 $$
-w_{k+1}^{(i)} \propto P\!\left(o_{k+1} \mid x_{k+1}^{(i)}\right)
+w_{k+1}^{(i)} \propto w_k^{(i)}p(o_{k+1} \mid x_{k+1}^{(i)})
 $$
 
-In localization: update the particle cloud with the odometry motion, then run scan matching for each particle to determine weights.
+The ordinary Bayes Filter does:
 
-### Scan Correlation
-Score how well a particle's predicted scan matches the actual map using a 2D correlation:
+$$
+\text{previous belief}
+\xrightarrow{\text{prediction}}
+\text{predicted belief}
+\xrightarrow{\text{observation}}
+\text{corrected belief}
+$$
+
+The Particle Filter does the same thing:
+
+$$
+\text{weighted particles}
+\xrightarrow{\text{motion model}}
+\text{new particles}
+\xrightarrow{\text{sensor likelihood}}
+\text{new weights}
+$$
+
+#### Scan Correlation (part of step 2)
+
+After **prediction**, each particle represents a possible robot pose. For each particle, we compare the LiDAR scan predicted from that pose with the known map to determine how well that pose agrees with the observation.
 
 $$
 S = \frac{\sum_m \sum_n (A_{mn} - \bar{A})(B_{mn} - \bar{B})}{\sqrt{\left(\sum_m \sum_n (A_{mn} - \bar{A})^2\right)\left(\sum_m \sum_n (B_{mn} - \bar{B})^2\right)}}
 $$
 
-- $A$: actual map, $B$: occupancy map from the scan, with
+- $A$: the relevant section of the actual map around the particle's predicted pose
+- $B$: occupancy map produced from the particle's predicted scan
+- $A_{mn}$, $B_{mn}$: corresponding cells in the two maps
+- $\bar{A}$, $\bar{B}$: the mean cell value of each map
+- $S$: correlation score; higher $S$ means the scan aligns better with the map
+
+The map section $A$ is chosen based on the particle's **predicted pose**, so the scan and map are compared in the same location.
 
 $$
-A_{mn} = \begin{cases} 1, & \text{wall} \\ 0, & \text{free space} \end{cases}
+A_{mn} =
+\begin{cases}
+1, & \text{wall} \\
+0, & \text{free space}
+\end{cases}
 $$
 
-- Update the weight by the score: $w_{t+1} \leftarrow w_t \times S$
-- The scan that aligns with the map well gets a high correlation score → high weight (the best-aligned particle wins)
+- Update the particle's weight using its scan score:
+
+$$
+w_{k+1}^{(i)} \leftarrow w_k^{(i)}S^{(i)}
+$$
+
+Here, $\leftarrow$ means **update/replace with**. A particle whose predicted scan aligns well with the map gets a higher weight, while a poorly aligned particle gets a lower weight.
 
 ![Scan Correlation](/assets/module-c/lecture-7/scan-correlation.png)
 
-### Step 3: Resampling
+### Step 3: Normalize the weights
+
+After updating the weights, normalize them so they form a probability distribution:
+
+$$
+w_{k+1}^{(i)} \leftarrow
+\frac{w_{k+1}^{(i)}}{\sum_{j=1}^{N} w_{k+1}^{(j)}}
+$$
+
+Now:
+
+$$
+\sum_{i=1}^{N} w_{k+1}^{(i)} = 1
+$$
+
+This makes the weights interpretable as the relative probabilities of the particles and allows them to be used for resampling.
+
+### Step 4: Resampling
 Without resampling, weight concentrates on a few particles while the rest carry negligible weight (*particle degeneracy*).
 
 Resampling redraws particles in proportion to their weights:
@@ -343,20 +570,23 @@ Resampling redraws particles in proportion to their weights:
 
 ### Particle Filter Loop (Summary)
 1. **Predict**: propagate each particle through the motion model + noise (odometry)
-2. **Correct**: weight each particle by the observation likelihood (scan correlation vs. map)
-3. **Resample**: redraw particles according to weight
+2. **Correct/Weight**: weight each particle by the observation likelihood (scan correlation vs. map)
+3. **Normalize**: normalize the particle weights so they sum to 1
+4. **Resample**: redraw particles according to their weights
 
-## Interpretation of Bayes Rule (Mapping Example)
-Using $\text{posterior} = \dfrac{\text{likelihood} \times \text{prior}}{\text{evidence}}$, $\quad P(B \mid A) = \dfrac{P(A \mid B)P(B)}{P(A)}$:
+So the full loop is:
 
-- $B$: there is an obstacle at $x = 2$
-- $A$: the LiDAR detects the obstacle
-- $P(A)$: uncertainty from the LiDAR measurement
-- $P(A \mid B)$: uncertainty from the position of the car
-- $P(B)$: prior knowledge (is there a wall at $x = 2$?)
-- $P(B \mid A)$: given the LiDAR observation, the probability of $B$
-
-Open question: how do we get the prior knowledge? → mapping.
+$$
+\text{Predict}
+\rightarrow
+\text{Weight}
+\rightarrow
+\text{Normalize}
+\rightarrow
+\text{Resample}
+\rightarrow
+\text{repeat}
+$$
 
 ## Localization: "Where am I?"
 Fuse two noisy information sources to estimate pose:
