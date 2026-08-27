@@ -15,20 +15,12 @@ The lecture runs in two passes: **Intuition** first, then **Analysis**.
 
 ## Why We Need a Map
 
-### Limitations of Basic Path Planning
-High-level path assignments (e.g. "2nd right, 2nd right, 1st right, 1st left") give **turns, not trajectories**. That is not enough for racing.
+We need a map to know **where the car is and what is around it** for localization and planning.
 
-### Competitive Racing Follows Race Lines
-- Precise trajectories along the optimal path
-- At the max possible velocity
-- Know the path *before and after* the turn
-- Manipulate speed accordingly
-
-### Limitations: No Future Information
-- Need to account for the *next* turn as well, not just the current one
-- 1st turn: two different lines can both look optimal
-- 2nd turn: only one of them stays optimal, because the curvature demanded by the other is too large
-- In F1 races the track is known in advance → we should build the map in advance too
+* Basic path planning gives **turns, not trajectories**, which is not enough for racing
+* Racing requires a precise **race line** and high speed
+* The optimal line for one turn depends on the **next turn**: a line that is best for the current turn may make the next turn worse
+* In F1 races the track is known in advance → we should **build the map in advance too**
 
 ### System Overview
 The full stack, in order:
@@ -87,8 +79,6 @@ The measurement model is the probability of a cell being occupied or free given 
 $$
 p(z \mid m_{x,y})
 $$
-
-![Occupancy Grid Measurement Model](/assets/module-c/lecture-8/occupancy-measurement-model.png)
 
 ### Log Odds Probability
 For each laser scan, the probability value of every cell the scan passes through is less than 1. Multiplying these repeatedly drives the accumulated probability to almost zero, which makes it meaningless.
