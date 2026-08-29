@@ -106,7 +106,7 @@ For example, if $p(z)=0.8$, then the odds are $0.8/0.2=4$, meaning $z$ is 4 time
 Using odds, Bayesian updating becomes multiplication of the previous odds by the measurement's **likelihood ratio**. This ratio tells us how much the measurement $m_{x,y}$ supports $z$ over $\neg z$:
 
 $$
-\operatorname{odds}(z \mid m_{x,y}) = \operatorname{odds}(z) \frac{p(m_{x,y} \mid z)}{p(m_{x,y} \mid \neg z)}
+\text{odds}(z \mid m_{x,y}) = \text{odds}(z) \frac{p(m_{x,y} \mid z)}{p(m_{x,y} \mid \neg z)}
 $$
 
 Taking the logarithm converts multiplication into addition:
@@ -134,12 +134,12 @@ Accumulate the log-odds evidence for each cell over iterations:
 
 - If $m_{x,y}=1$ (LiDAR ray ends in the cell):
 $$
-\log odd = \log odd + \log odd_{\text{occ}}
+\log \text{odd} = \log \text{odd} + \log \text{odd}_{\text{occ}}
 $$
 
 - If $m_{x,y}=0$ (LiDAR ray passes through the cell):
 $$
-\log odd = \log odd - \log odd_{\text{free}}
+\log \text{odd} = \log \text{odd} - \log \text{odd}_{\text{free}}
 $$
 
 The accumulated log odds represent our current belief about the cell state $z$.
