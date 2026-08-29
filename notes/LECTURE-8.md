@@ -133,11 +133,13 @@ At each time stamp we update the robot pose and map these constants to particula
 Accumulate the log-odds evidence for each cell over iterations:
 
 - If $m_{x,y}=1$ (LiDAR ray ends in the cell):
+
 $$
 \log \text{odd} = \log \text{odd} + \log \text{odd}_{\text{occ}}
 $$
 
 - If $m_{x,y}=0$ (LiDAR ray passes through the cell):
+
 $$
 \log \text{odd} = \log \text{odd} - \log \text{odd}_{\text{free}}
 $$
