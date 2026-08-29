@@ -65,7 +65,7 @@ m_{x,y} = \begin{cases} 1, & \text{LiDAR ray end point} \\ 0, & \text{free space
 $$
 
 ### Map Cell States
-The cell state $Z$ is distinct from the raw measurement:
+The map state $Z$ is distinct from the raw LiDAR measurement $m_{x,y}$:
 
 | $Z$ | Map cell state |
 |----|----------------|
@@ -74,16 +74,57 @@ The cell state $Z$ is distinct from the raw measurement:
 | $-1$ | Free |
 
 ### Measurement Model
-The measurement model is the probability of a cell being occupied or free given the LiDAR measurement being 1 or 0. It encodes the estimated uncertainty in the sensor data:
+The underlying cell state is binary:
 
 $$
-p(z \mid m_{x,y})
+z \in \{-1,1\}
 $$
+
+where $z=-1$ means free and $z=1$ means occupied. Unexplored is not a third physical state; it means we have no information about the cell yet. Therefore, an unexplored cell starts with an initial belief of approximately:
+
+$$
+p(z=1)=p(z=-1)=\frac{1}{2}
+$$
+
+LiDAR measurements then provide evidence that updates this belief toward $z=-1$ or $z=1$.
 
 ### Log Odds Probability
-For each laser scan, the probability value of every cell the scan passes through is less than 1. Multiplying these repeatedly drives the accumulated probability to almost zero, which makes it meaningless.
+For each LiDAR measurement, we use Bayes' rule to update our belief about the cell state:
 
-To avoid this underflow we work in **log probability**:
+$$
+p(z \mid m_{x,y}) = \frac{p(m_{x,y} \mid z)p(z)}{p(m_{x,y})}
+$$
+
+Instead of repeatedly working directly with probabilities, we can express our belief using **odds**. Odds compare how likely the cell is to be in the state $z$ versus not being in that state:
+
+$$
+\text{odds}(z)=\frac{p(z)}{1-p(z)}
+$$
+
+For example, if $p(z)=0.8$, then the odds are $0.8/0.2=4$, meaning $z$ is 4 times more likely than $\neg z$.
+
+Using odds, Bayesian updating becomes multiplication of the previous odds by the measurement's **likelihood ratio**. This ratio tells us how much the measurement $m_{x,y}$ supports $z$ over $\neg z$:
+
+$$
+\text{odds}(z\mid m_{x,y})
+=
+\text{odds}(z)
+\frac{p(m_{x,y}\mid z)}{p(m_{x,y}\mid \neg z)}
+$$
+
+Taking the logarithm converts multiplication into addition:
+
+$$
+\log\text{odds}(z\mid m_{x,y})
+=
+\log\text{odds}(z)
++
+\log\frac{p(m_{x,y}\mid z)}{p(m_{x,y}\mid \neg z)}
+$$
+
+We accumulate evidence from multiple LiDAR measurements using addition instead of repeatedly multiplying small probabilities. Since the measurement likelihood $p(m_{x,y}\mid z)$ is less than 1, repeatedly multiplying it makes the result shrink toward zero, eventually causing numerical underflow.
+
+To avoid this we work in **log odds**:
 
 $$
 \log odd\_occ := \log \frac{p(z = 1 \mid m_{x,y} = 1)}{p(z = 1 \mid m_{x,y} = 0)}
@@ -93,22 +134,51 @@ $$
 \log odd\_free := \log \frac{p(z = -1 \mid m_{x,y} = 0)}{p(z = -1 \mid m_{x,y} = 1)}
 $$
 
-At each time stamp we update the robot pose and map these constants to particular map cells, telling us the odds of a cell being occupied or free.
-
-![Log Odds Probability](/assets/module-c/lecture-8/log-odds-probability.png)
+At each time stamp we update the robot pose and map these constants to particular map cells, providing evidence about whether each cell is occupied or free.
 
 ### Map Update
-Accumulate the constants for each cell over iterations to build a confidence level:
+Accumulate the log-odds evidence for each cell over iterations:
 
-- Cells with $z = 1$: $\quad \log odd = \log odd + \log odd\_occ$
-- Cells with $z = -1$: $\quad \log odd = \log odd - \log odd\_free$
+- If $m_{x,y}=1$ (LiDAR ray ends in the cell):
+$$
+\log odd = \log odd + \log odd\_occ
+$$
+
+- If $m_{x,y}=0$ (LiDAR ray passes through the cell):
+$$
+\log odd = \log odd - \log odd\_free
+$$
+
+The accumulated log odds represent our current belief about the cell state $z$.
 
 ### Accumulating Confidence and Saturation
-In robotics you always deal with unexpected noise in motion and sensing, so **you should never be completely certain of your observation**.
+In robotics, sensor measurements and robot motion are uncertain, so we should never become completely certain that an observation is correct. As measurements accumulate, however, the log odds can become extremely large or small, making the cell difficult to change with later evidence.
 
-To avoid absolute certainty, threshold the cell values with an upper and lower **saturation limit**. This keeps a cell from becoming permanently locked at fully occupied or fully free, so later evidence can still move it.
+To prevent this, we apply upper and lower saturation limits:
+
+$$
+L_{\min}\leq \log odds \leq L_{\max}
+$$
+
+This limits our confidence so future measurements can still change the cell's state.
 
 ![Log Odds Saturation Limit](/assets/module-c/lecture-8/log-odds-saturation.png)
+
+### Determining the Map State
+
+After accumulating the log-odds, we can convert them back to $P(z=1)$ and use thresholds to classify the cell. For example:
+
+$$
+P(z=1)>0.7 \Rightarrow \text{Occupied}
+$$
+
+$$
+P(z=1)<0.3 \Rightarrow \text{Free}
+$$
+
+$$
+0.3\leq P(z=1)\leq0.7 \Rightarrow \text{Unknown}
+$$
 
 ## Scan Matching with Hector SLAM
 
