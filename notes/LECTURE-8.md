@@ -77,7 +77,7 @@ The map state $Z$ is distinct from the raw LiDAR measurement $m_{x,y}$:
 The underlying cell state is binary:
 
 $$
-z \in \{-1,1\}
+z \in \left\{-1,1\right\}
 $$
 
 where $z=-1$ means free and $z=1$ means occupied. Unexplored is not a third physical state; it means we have no information about the cell yet. Therefore, an unexplored cell starts with an initial belief of approximately:
