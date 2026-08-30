@@ -258,11 +258,7 @@ This turns the nonlinear alignment problem into a local linear approximation. **
 We update the pose:
 
 $$
-\boldsymbol{\xi}_{new}
-=
-\boldsymbol{\xi}_{old}
-+
-\Delta\boldsymbol{\xi}
+\boldsymbol{\xi}_{new}=\boldsymbol{\xi_{old}}+\Delta\boldsymbol{\xi}
 $$
 
 This process is repeated: after updating the pose, we linearize again around the new pose and calculate a new $\Delta\boldsymbol{\xi}$. This continues until the alignment error is sufficiently small.
@@ -276,10 +272,21 @@ The occupancy grid does **not** assign a wall or free space from a single scan, 
 
 After every few laser scans, once the map is confident about a chunk of cells, it gets published as the occupancy map.
 
-### Multi-Resolution Map Representation
-This kind of optimization can get stuck in **local minima**. To avoid this, rather than using a single occupancy grid, the equation is optimized first over coarser maps, and that estimate is fed as the input to the optimization over the higher-resolution map.
+> **Note:** The map is used for scan matching even when it is still uncertain. As more LiDAR measurements accumulate, the probabilities provide stronger evidence about which cells are actually occupied or free.
 
-Example: with a target resolution of 5 cm and 3 multi-resolution grids, the algorithm iterates over grids of **20 cm → 10 cm → 5 cm**. The pose update from the 20 cm grid is the input to the 10 cm grid, and so on.
+### Multi-Resolution Maps
+
+The optimization can get stuck in a **local minimum**: a pose where the alignment error is low, but it is **not the best possible alignment**.
+
+To reduce this risk, Hector SLAM uses multiple versions of our **occupancy map**, each with a different resolution. A **coarser map** uses larger grid cells, which smooths out small details and makes it easier to find the general alignment.
+
+The optimization proceeds from coarse to fine:
+
+$$
+20\text{ cm} \rightarrow 10\text{ cm} \rightarrow 5\text{ cm}
+$$
+
+The pose found using the 20 cm map is used as the starting point for the 10 cm map, which is then refined using the 5 cm map.
 
 ![Multi-Resolution Map Representation](/assets/module-c/lecture-8/multi-resolution-map.png)
 
