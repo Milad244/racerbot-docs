@@ -321,8 +321,8 @@ Hector odometry provides the transform between the odom frame and the base frame
 - `map_update_distance_thresh`: minimum distance travelled before a map update
 - `map_update_angle_thresh`: minimum angle travelled before a map update
 - `laser_max_dist`: laser sensor specification
-- `update_factor_free`: log odds probability for free cells
-- `update_factor_occupied`: log odds probability for occupied cells
+- `update_factor_free`: factor controlling the **log-odds update strength** when updating free cells
+- `update_factor_occupied`: factor controlling the **log-odds update strength** when updating occupied cells
 
 ## Localization with Odometry
 
