@@ -164,15 +164,15 @@ This limits our confidence so future measurements can still change the cell's st
 After accumulating the log-odds, we can convert them back to $P(z=1)$ and use thresholds to classify the cell. For example:
 
 $$
-P(z=1)>0.7 \Rightarrow \text{Occupied}
+P(z=1)>0.5 \Rightarrow \text{Occupied}
 $$
 
 $$
-P(z=1)<0.3 \Rightarrow \text{Free}
+P(z=1)<0.5 \Rightarrow \text{Free}
 $$
 
 $$
-0.3\leq P(z=1)\leq0.7 \Rightarrow \text{Unknown}
+P(z=1)=0.5 \Rightarrow \text{Unknown}
 $$
 
 ## Scan Matching with Hector SLAM
