@@ -188,39 +188,84 @@ Once the car proceeds further, the goal is to find the **pose change** relative 
 - Scan matching finds the pose change between these two timestamps by aligning the second scan with the first
 - The change in robot pose is maintained *while* the map is updated simultaneously
 
+**Initial pose** → **First LiDAR scan** → **Initial map**
+
+**Robot moves** → **New LiDAR scan** → **Align scan with existing map** → **Estimate pose change** → **Update pose & map**
+
 ![Scan Matching Frame Alignment](/assets/module-c/lecture-8/scan-matching-frame-alignment.png)
 
 ### The Hector SLAM Objective
-The robot pose is $\boldsymbol{\xi} = (p_x, p_y, \psi)^{\mathrm{T}}$. Hector SLAM solves:
+The robot pose is $\boldsymbol{\xi} = (p_x, p_y, \psi)^{\mathrm{T}}$, where $p_x,p_y$ are the robot's position and $\psi$ is its orientation. Hector SLAM finds the pose that makes the **new LiDAR scan align best with the existing map**:
 
 $$
 \boldsymbol{\xi}^{*} = \arg\min_{\boldsymbol{\xi}} \sum_{i=1}^{n} \left[ 1 - M(\mathbf{S}_i(\boldsymbol{\xi})) \right]^2
 $$
 
-- $\mathbf{S}_i(\boldsymbol{\xi})$: impact coordinates of the $i$-th scan in the world frame
-- $M(\mathbf{S}_i(\boldsymbol{\xi}))$: map value $\{0, 1\}$ at the coordinates given by $\mathbf{S}_i$
-- $n$: total number of scans
+- $\boldsymbol{\xi}$: candidate robot pose $(p_x,p_y,\psi)$ being tested
+- $\boldsymbol{\xi}^{*}$: pose that gives the best alignment
+- $\mathbf{S}_i(\boldsymbol{\xi})$: map-frame coordinates of the $i$-th LiDAR scan endpoint, given pose $\boldsymbol{\xi}$
+- $M(\mathbf{S}_i(\boldsymbol{\xi}))$: map value at that endpoint's location; $M=1$ means occupied/wall and $M=0$ means free
+- Any negative map values (e.g. free cells) are **masked to $0$** for this objective, so only occupied cells contribute as $M=1$.
+- $n$: total number of LiDAR scan endpoints
 
-A perfect alignment puts every scan endpoint on a wall ($M = 1$), driving the sum to zero. With real uncertainty and minor errors, the goal is to **minimize** this summation.
+The term
+
+$$
+\left[1-M(\mathbf{S}_i(\boldsymbol{\xi}))\right]^2
+$$
+
+is the **alignment error** for endpoint $i$. If the endpoint lands on a wall, $M=1$ and the error is $0$. If it lands in free space, $M=0$ and the error is $1$.
+
+Therefore, Hector SLAM searches for the pose $\boldsymbol{\xi}$ that **minimizes the total error**, meaning the LiDAR endpoints line up as closely as possible with the occupied areas of the existing map.
 
 ![Hector Scan Matching Objective](/assets/module-c/lecture-8/hector-scan-matching-objective.png)
 
 ### Optimizing Over the Pose Change
-The pose can be written as the previous pose plus the change in pose over the small time interval, which turns the minimization into a function over $\Delta\boldsymbol{\xi}$:
+Instead of testing many possible poses, Hector SLAM assumes the pose change is small and **linearizes the alignment function around the current pose**. The linearization tells us how small changes in pose affect the alignment error, and **Gauss-Newton uses this information to calculate the pose change $\Delta\boldsymbol{\xi}$**.
+
+
+After the robot moves, we have a previous pose $\boldsymbol{\xi}$ and want to find the small **pose change** $\Delta\boldsymbol{\xi}$. The new pose is therefore:
 
 $$
-\sum_{i=1}^{n} \left[ 1 - M(\mathbf{S}_i(\boldsymbol{\xi} + \Delta\boldsymbol{\xi})) \right]^2 \rightarrow 0
+\boldsymbol{\xi}_{new}=\boldsymbol{\xi}+\Delta\boldsymbol{\xi}
 $$
 
-Expand using the **Taylor expansion** of the function $M$:
+We want to find the $\Delta\boldsymbol{\xi}$ that makes the new LiDAR scan align best with the existing map:
 
 $$
-\sum_{i=1}^{n} \left[ 1 - M(\mathbf{S}_i(\boldsymbol{\xi})) - \nabla M(\mathbf{S}_i(\boldsymbol{\xi})) \frac{\partial \mathbf{S}_i(\boldsymbol{\xi})}{\partial \boldsymbol{\xi}} \Delta\boldsymbol{\xi} \right]^2 \rightarrow 0
+\sum_{i=1}^{n}
+\left[
+1-M(\mathbf{S}_i(\boldsymbol{\xi}+\Delta\boldsymbol{\xi}))
+\right]^2
+\rightarrow 0
 $$
 
-Solving for $\Delta\boldsymbol{\xi}$ yields the **Gauss-Newton equation**. Evaluating it gives a step $\Delta\boldsymbol{\xi}$ that minimizes the objective function.
+The problem is that $M(\mathbf{S}_i(\boldsymbol{\xi}+\Delta\boldsymbol{\xi}))$ is a nonlinear function of the pose. For a **small** pose change, we use a **first-order Taylor expansion (linearization)** to approximate how the map value changes when we slightly change the pose:
 
-In practice: keep rotating and translating the second scan until the error is minimum, which means the scans are aligned. Then update the pose with the calculated pose change, transform the current laser scans to the new pose, and update the map with the transformed scans.
+$$
+\sum_{i=1}^{n}
+\left[
+1-M(\mathbf{S}_i(\boldsymbol{\xi}))
+-\nabla M(\mathbf{S}_i(\boldsymbol{\xi}))
+\frac{\partial\mathbf{S}_i(\boldsymbol{\xi})}{\partial\boldsymbol{\xi}}
+\Delta\boldsymbol{\xi}
+\right]^2
+\rightarrow 0
+$$
+
+This turns the nonlinear alignment problem into a local linear approximation. **Gauss-Newton solves this approximation to calculate a $\Delta\boldsymbol{\xi}$ that reduces the alignment error.**
+
+We update the pose:
+
+$$
+\boldsymbol{\xi}_{new}
+=
+\boldsymbol{\xi}_{old}
++
+\Delta\boldsymbol{\xi}
+$$
+
+This process is repeated: after updating the pose, we linearize again around the new pose and calculate a new $\Delta\boldsymbol{\xi}$. This continues until the alignment error is sufficiently small.
 
 ![Hector SLAM Gauss-Newton Derivation](/assets/module-c/lecture-8/hector-gauss-newton.png)
 
