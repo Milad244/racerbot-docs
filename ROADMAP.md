@@ -67,5 +67,10 @@ Throughout using `ROS 2`, you may find this [workflow](/resources/WORKFLOW.md) d
 
 ## Module C: Mapping & Localization
 
-1. [Lecture 7](https://youtu.be/kQi5IGzvr0c?si=89jK2Q1ja-OfM-Ym)
+1. [Lecture 7](https://youtu.be/kQi5IGzvr0c?si=89jK2Q1ja-OfM-Ym) & [Lecture 8](https://youtu.be/SRBdpoPl57Q?t=1266) (from time 21:05)
     - [Lecture 7 Notes](notes/LECTURE-7.md)
+
+<hr style="border-top: 1px dotted #bbb; background: transparent;">
+
+2. [Lecture 8](https://www.youtube.com/watch?v=SRBdpoPl57Q)
+    - [Lecture 8 Notes](notes/LECTURE-8.md)

@@ -1,6 +1,6 @@
 # Lecture 7 Notes
 
-**Lecture 7:** https://youtu.be/kQi5IGzvr0c?si=89jK2Q1ja-OfM-Ym
+**Lecture 7:** https://youtu.be/kQi5IGzvr0c?si=89jK2Q1ja-OfM-Ym & https://youtu.be/SRBdpoPl57Q?t=1266 from time 21:05
 
 ## Localization and Mapping: Introduction to Bayes Filter
 
@@ -110,7 +110,7 @@ $$
 
 With $A$: evidence (observation), $B$: hypothesis (state):
 - **Prior** $P(B)$: the probability distribution (belief) *before* the evidence is considered
-- **Likelihood** $P(A \mid B)$: probability of the evidence given the belief → how much can we trust the belief?
+- **Likelihood** $P(A \mid B)$: probability of the evidence given the belief → how compatible is the observation with this hypothesized state?
 - **Posterior** $P(B \mid A)$: updated belief *after* the evidence is considered
 - **Evidence** $P(A)$: usually a normalization term so the posterior is a valid PDF
 
@@ -426,10 +426,10 @@ $$
 
   - $x^{(i)}$: the $i$-th sampled state
 - $q(x^{(i)})$: how likely the proposal was to generate that state; dividing by it corrects for the proposal's sampling bias
-- $p(x^{(i)})$: the target distribution **evaluated at that particular state** $x^{(i)}$; we can often compute this without explicitly constructing the entire target distribution $p(x)$
-- $p(x)$: the **entire target distribution** that we are trying to approximate with our particles; we don't need to calculate/store the whole distribution explicitly
+- $p(x)$: the target distribution we want to approximate.
 - $w^{(i)}$: how important the sampled state should be, based on how likely it is under $p$ relative to $q$
-
+- $p(x^{(i)})$: the value of the target distribution at the sampled state $x^{(i)}$ — i.e., how much probability density the target assigns to that state.
+This is the theoretical importance-sampling formulation. Later, in our Particle Filter, we will use a different method to determine the particle weights.
 
 The Dirac delta $\delta(x-a)$ represents an idealized spike located exactly at $x=a$:
 
@@ -483,31 +483,41 @@ $$
 ### Step 2: Correction (with the observation)
 Given a new observation, update each particle's weight using its previous weight and the likelihood of that observation:
 
-$$
-w_{k+1}^{(i)} \propto w_k^{(i)}p(o_{k+1} \mid x_{k+1}^{(i)})
-$$
-
-The ordinary Bayes Filter does:
+**Connection to the Particle Filter:** In localization, the **target** is the posterior distribution we want, while the **proposal** is chosen using the robot's motion model:
 
 $$
-\text{previous belief}
-\xrightarrow{\text{prediction}}
-\text{predicted belief}
-\xrightarrow{\text{observation}}
-\text{corrected belief}
+q(x_t\mid x_{t-1},u_t)=p(x_t\mid x_{t-1},u_t)
 $$
 
-The Particle Filter does the same thing:
+So the PF works as:
 
 $$
-\text{weighted particles}
-\xrightarrow{\text{motion model}}
-\text{new particles}
-\xrightarrow{\text{sensor likelihood}}
-\text{new weights}
+\text{predict particles using motion}
+\rightarrow
+\text{weight using observations}
 $$
 
-#### Scan Correlation (part of step 2)
+Using Bayes' rule, the motion-model terms cancel:
+
+$$
+w_t^{(i)}
+\propto
+w_{t-1}^{(i)}
+\frac{
+p(o_t\mid x_t^{(i)})\,
+p(x_t^{(i)}\mid x_{t-1}^{(i)},u_t)
+}{
+q(x_t^{(i)}\mid x_{t-1}^{(i)},u_t)
+}
+$$
+
+Therefore,
+
+$$
+w_t^{(i)}
+\propto
+w_{t-1}^{(i)}p(o_t\mid x_t^{(i)})
+$$
 
 After **prediction**, each particle represents a possible robot pose. For each particle, we compare the LiDAR scan predicted from that pose with the known map to determine how well that pose agrees with the observation.
 
@@ -533,13 +543,42 @@ $$
 
 - Update the particle's weight using its scan score:
 
+In our implementation, the observation likelihood is approximated by the **scan-correlation score**:
+
 $$
-w_{k+1}^{(i)} \leftarrow w_k^{(i)}S^{(i)}
+S^{(i)}\approx p(o_{k+1}\mid x_{k+1}^{(i)})
 $$
 
-Here, $\leftarrow$ means **update/replace with**. A particle whose predicted scan aligns well with the map gets a higher weight, while a poorly aligned particle gets a lower weight.
+So the weight update becomes:
+
+$$
+w_{k+1}^{(i)}\leftarrow w_k^{(i)}S^{(i)}
+$$
+
+* High $S^{(i)}$ → scan matches the map well → **higher weight**
+* Low $S^{(i)}$ → poor match → **lower weight**
 
 ![Scan Correlation](/assets/module-c/lecture-7/scan-correlation.png)
+
+The ordinary Bayes Filter does:
+
+$$
+\text{previous belief}
+\xrightarrow{\text{prediction}}
+\text{predicted belief}
+\xrightarrow{\text{observation}}
+\text{corrected belief}
+$$
+
+The Particle Filter does the same thing:
+
+$$
+\text{weighted particles}
+\xrightarrow{\text{motion model}}
+\text{new particles}
+\xrightarrow{\text{sensor likelihood}}
+\text{new weights}
+$$
 
 ### Step 3: Normalize the weights
 
@@ -562,9 +601,13 @@ This makes the weights interpretable as the relative probabilities of the partic
 Without resampling, weight concentrates on a few particles while the rest carry negligible weight (*particle degeneracy*).
 
 Resampling redraws particles in proportion to their weights:
-- High-weight particles are duplicated; low-weight particles die off
-- Over $N$ iterations the particle cloud concentrates around high-probability regions
-- Result: particles track the true posterior efficiently (Courtesy: Thrun, Burgard, Fox)
+- Start with an initial set of particles drawn from the belief distribution.
+- As particles propagate, their weights change and some become dominant.
+- High-weight particles are duplicated; low-weight particles die off.
+- Resampling draws more particles near high-weight particles, concentrating the cloud around high-probability regions.
+- All new particles start with the same weight, allowing the filter to begin the next iteration.
+
+**Result**: the particle cloud efficiently tracks high-probability regions of the posterior.
 
 ![Resampling](/assets/module-c/lecture-7/resampling.png)
 

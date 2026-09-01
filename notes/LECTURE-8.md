@@ -8,27 +8,16 @@ Lesson plan:
 1. Map making with Hector SLAM
 2. Particle Filter Localization
 3. Adaptive Monte Carlo Localization (AMCL)
-4. Recursive Bayes Filtering used in AMCL
-5. Tuning Particle Filters in ROS
-
-The lecture runs in two passes: **Intuition** first, then **Analysis**.
+4. Tuning Particle Filters in ROS
 
 ## Why We Need a Map
 
-### Limitations of Basic Path Planning
-High-level path assignments (e.g. "2nd right, 2nd right, 1st right, 1st left") give **turns, not trajectories**. That is not enough for racing.
+We need a map to know **where the car is and what is around it** for localization and planning.
 
-### Competitive Racing Follows Race Lines
-- Precise trajectories along the optimal path
-- At the max possible velocity
-- Know the path *before and after* the turn
-- Manipulate speed accordingly
-
-### Limitations: No Future Information
-- Need to account for the *next* turn as well, not just the current one
-- 1st turn: two different lines can both look optimal
-- 2nd turn: only one of them stays optimal, because the curvature demanded by the other is too large
-- In F1 races the track is known in advance → we should build the map in advance too
+* Basic path planning gives **turns, not trajectories**, which is not enough for racing
+* Racing requires a precise **race line** and high speed
+* The optimal line for one turn depends on the **next turn**: a line that is best for the current turn may make the next turn worse
+* In F1 races the track is known in advance → we should **build the map in advance too**
 
 ### System Overview
 The full stack, in order:
@@ -73,7 +62,7 @@ m_{x,y} = \begin{cases} 1, & \text{LiDAR ray end point} \\ 0, & \text{free space
 $$
 
 ### Map Cell States
-The cell state $Z$ is distinct from the raw measurement:
+The map state $Z$ is distinct from the raw LiDAR measurement $m_{x,y}$:
 
 | $Z$ | Map cell state |
 |----|----------------|
@@ -82,43 +71,106 @@ The cell state $Z$ is distinct from the raw measurement:
 | $-1$ | Free |
 
 ### Measurement Model
-The measurement model is the probability of a cell being occupied or free given the LiDAR measurement being 1 or 0. It encodes the estimated uncertainty in the sensor data:
+The underlying cell state is binary:
 
 $$
-p(z \mid m_{x,y})
+z \in \lbrace -1,1 \rbrace
 $$
 
-![Occupancy Grid Measurement Model](/assets/module-c/lecture-8/occupancy-measurement-model.png)
+where $z=-1$ means free and $z=1$ means occupied. Unexplored is not a third physical state; it means we have no information about the cell yet. Therefore, an unexplored cell starts with an initial belief of approximately:
+
+$$
+p(z=1)=p(z=-1)=\frac{1}{2}
+$$
+
+LiDAR measurements then provide evidence that updates this belief toward $z=-1$ or $z=1$.
 
 ### Log Odds Probability
-For each laser scan, the probability value of every cell the scan passes through is less than 1. Multiplying these repeatedly drives the accumulated probability to almost zero, which makes it meaningless.
-
-To avoid this underflow we work in **log probability**:
+For each LiDAR measurement, we use Bayes' rule to update our belief about the cell state:
 
 $$
-\log odd\_occ := \log \frac{p(z = 1 \mid m_{x,y} = 1)}{p(z = 1 \mid m_{x,y} = 0)}
+p(z \mid m_{x,y}) = \frac{p(m_{x,y} \mid z)p(z)}{p(m_{x,y})}
+$$
+
+Instead of repeatedly working directly with probabilities, we can express our belief using **odds**. Odds compare how likely the cell is to be in the state $z$ versus not being in that state:
+
+$$
+\text{odds}(z)=\frac{p(z)}{1-p(z)}
+$$
+
+For example, if $p(z)=0.8$, then the odds are $0.8/0.2=4$, meaning $z$ is 4 times more likely than $\neg z$.
+
+Using odds, Bayesian updating becomes multiplication of the previous odds by the measurement's **likelihood ratio**. This ratio tells us how much the measurement $m_{x,y}$ supports $z$ over $\neg z$:
+
+$$
+\text{odds}(z \mid m_{x,y}) = \text{odds}(z) \frac{p(m_{x,y} \mid z)}{p(m_{x,y} \mid \neg z)}
+$$
+
+Taking the logarithm converts multiplication into addition:
+
+$$
+\log\text{odds}(z \mid m_{x,y}) = \log\text{odds}(z) + \log\frac{p(m_{x,y} \mid z)}{p(m_{x,y} \mid \neg z)}
+$$
+
+We accumulate evidence from multiple LiDAR measurements using addition instead of repeatedly multiplying small probabilities. Since the measurement likelihood $p(m_{x,y}\mid z)$ is less than 1, repeatedly multiplying it makes the result shrink toward zero, eventually causing numerical underflow.
+
+To avoid this we work in **log odds**:
+
+$$
+\log odd_{\text{occ}} := \log \frac{p(z = 1 \mid m_{x,y} = 1)}{p(z = 1 \mid m_{x,y} = 0)}
 $$
 
 $$
-\log odd\_free := \log \frac{p(z = -1 \mid m_{x,y} = 0)}{p(z = -1 \mid m_{x,y} = 1)}
+\log odd_{\text{free}} := \log \frac{p(z = -1 \mid m_{x,y} = 0)}{p(z = -1 \mid m_{x,y} = 1)}
 $$
 
-At each time stamp we update the robot pose and map these constants to particular map cells, telling us the odds of a cell being occupied or free.
-
-![Log Odds Probability](/assets/module-c/lecture-8/log-odds-probability.png)
+At each time stamp we update the robot pose and map these constants to particular map cells, providing evidence about whether each cell is occupied or free.
 
 ### Map Update
-Accumulate the constants for each cell over iterations to build a confidence level:
+Accumulate the log-odds evidence for each cell over iterations:
 
-- Cells with $z = 1$: $\quad \log odd = \log odd + \log odd\_occ$
-- Cells with $z = -1$: $\quad \log odd = \log odd - \log odd\_free$
+- If $m_{x,y}=1$ (LiDAR ray ends in the cell):
+
+$$
+\log \text{odd} = \log \text{odd} + \log \text{odd}_{\text{occ}}
+$$
+
+- If $m_{x,y}=0$ (LiDAR ray passes through the cell):
+
+$$
+\log \text{odd} = \log \text{odd} - \log \text{odd}_{\text{free}}
+$$
+
+The accumulated log odds represent our current belief about the cell state $z$.
 
 ### Accumulating Confidence and Saturation
-In robotics you always deal with unexpected noise in motion and sensing, so **you should never be completely certain of your observation**.
+In robotics, sensor measurements and robot motion are uncertain, so we should never become completely certain that an observation is correct. As measurements accumulate, however, the log odds can become extremely large or small, making the cell difficult to change with later evidence.
 
-To avoid absolute certainty, threshold the cell values with an upper and lower **saturation limit**. This keeps a cell from becoming permanently locked at fully occupied or fully free, so later evidence can still move it.
+To prevent this, we apply upper and lower saturation limits:
+
+$$
+L_{\min}\leq \log odds \leq L_{\max}
+$$
+
+This limits our confidence so future measurements can still change the cell's state.
 
 ![Log Odds Saturation Limit](/assets/module-c/lecture-8/log-odds-saturation.png)
+
+### Determining the Map State
+
+After accumulating the log-odds, we can convert them back to $P(z=1)$ and use thresholds to classify the cell. For example:
+
+$$
+P(z=1)>0.5 \Rightarrow \text{Occupied}
+$$
+
+$$
+P(z=1)<0.5 \Rightarrow \text{Free}
+$$
+
+$$
+P(z=1)=0.5 \Rightarrow \text{Unknown}
+$$
 
 ## Scan Matching with Hector SLAM
 
@@ -133,39 +185,80 @@ Once the car proceeds further, the goal is to find the **pose change** relative 
 - Scan matching finds the pose change between these two timestamps by aligning the second scan with the first
 - The change in robot pose is maintained *while* the map is updated simultaneously
 
+**Initial pose** → **First LiDAR scan** → **Initial map**
+
+**Robot moves** → **New LiDAR scan** → **Align scan with existing map** → **Estimate pose change** → **Update pose & map**
+
 ![Scan Matching Frame Alignment](/assets/module-c/lecture-8/scan-matching-frame-alignment.png)
 
 ### The Hector SLAM Objective
-The robot pose is $\boldsymbol{\xi} = (p_x, p_y, \psi)^{\mathrm{T}}$. Hector SLAM solves:
+The robot pose is $\boldsymbol{\xi} = (p_x, p_y, \psi)^{\mathrm{T}}$, where $p_x,p_y$ are the robot's position and $\psi$ is its orientation. Hector SLAM finds the pose that makes the **new LiDAR scan align best with the existing map**:
 
 $$
 \boldsymbol{\xi}^{*} = \arg\min_{\boldsymbol{\xi}} \sum_{i=1}^{n} \left[ 1 - M(\mathbf{S}_i(\boldsymbol{\xi})) \right]^2
 $$
 
-- $\mathbf{S}_i(\boldsymbol{\xi})$: impact coordinates of the $i$-th scan in the world frame
-- $M(\mathbf{S}_i(\boldsymbol{\xi}))$: map value $\{0, 1\}$ at the coordinates given by $\mathbf{S}_i$
-- $n$: total number of scans
+- $\boldsymbol{\xi}$: candidate robot pose $(p_x,p_y,\psi)$ being tested
+- $\boldsymbol{\xi}^{*}$: pose that gives the best alignment
+- $\mathbf{S}_i(\boldsymbol{\xi})$: map-frame coordinates of the $i$-th LiDAR scan endpoint, given pose $\boldsymbol{\xi}$
+- $M(\mathbf{S}_i(\boldsymbol{\xi}))$: map value at that endpoint's location; $M=1$ means occupied/wall and $M=0$ means free
+- Any negative map values (e.g. free cells) are **masked to $0$** for this objective, so only occupied cells contribute as $M=1$.
+- $n$: total number of LiDAR scan endpoints
 
-A perfect alignment puts every scan endpoint on a wall ($M = 1$), driving the sum to zero. With real uncertainty and minor errors, the goal is to **minimize** this summation.
+The term
+
+$$
+\left[1-M(\mathbf{S}_i(\boldsymbol{\xi}))\right]^2
+$$
+
+is the **alignment error** for endpoint $i$. If the endpoint lands on a wall, $M=1$ and the error is $0$. If it lands in free space, $M=0$ and the error is $1$.
+
+Therefore, Hector SLAM searches for the pose $\boldsymbol{\xi}$ that **minimizes the total error**, meaning the LiDAR endpoints line up as closely as possible with the occupied areas of the existing map.
 
 ![Hector Scan Matching Objective](/assets/module-c/lecture-8/hector-scan-matching-objective.png)
 
 ### Optimizing Over the Pose Change
-The pose can be written as the previous pose plus the change in pose over the small time interval, which turns the minimization into a function over $\Delta\boldsymbol{\xi}$:
+Instead of testing many possible poses, Hector SLAM assumes the pose change is small and **linearizes the alignment function around the current pose**. The linearization tells us how small changes in pose affect the alignment error, and **Gauss-Newton uses this information to calculate the pose change $\Delta\boldsymbol{\xi}$**.
+
+
+After the robot moves, we have a previous pose $\boldsymbol{\xi}$ and want to find the small **pose change** $\Delta\boldsymbol{\xi}$. The new pose is therefore:
 
 $$
-\sum_{i=1}^{n} \left[ 1 - M(\mathbf{S}_i(\boldsymbol{\xi} + \Delta\boldsymbol{\xi})) \right]^2 \rightarrow 0
+\boldsymbol{\xi}_{new}=\boldsymbol{\xi}+\Delta\boldsymbol{\xi}
 $$
 
-Expand using the **Taylor expansion** of the function $M$:
+We want to find the $\Delta\boldsymbol{\xi}$ that makes the new LiDAR scan align best with the existing map:
 
 $$
-\sum_{i=1}^{n} \left[ 1 - M(\mathbf{S}_i(\boldsymbol{\xi})) - \nabla M(\mathbf{S}_i(\boldsymbol{\xi})) \frac{\partial \mathbf{S}_i(\boldsymbol{\xi})}{\partial \boldsymbol{\xi}} \Delta\boldsymbol{\xi} \right]^2 \rightarrow 0
+\sum_{i=1}^{n}
+\left[
+1-M(\mathbf{S}_i(\boldsymbol{\xi}+\Delta\boldsymbol{\xi}))
+\right]^2
+\rightarrow 0
 $$
 
-Solving for $\Delta\boldsymbol{\xi}$ yields the **Gauss-Newton equation**. Evaluating it gives a step $\Delta\boldsymbol{\xi}$ that minimizes the objective function.
+The problem is that $M(\mathbf{S}_i(\boldsymbol{\xi}+\Delta\boldsymbol{\xi}))$ is a nonlinear function of the pose. For a **small** pose change, we use a **first-order Taylor expansion (linearization)** to approximate how the map value changes when we slightly change the pose:
 
-In practice: keep rotating and translating the second scan until the error is minimum, which means the scans are aligned. Then update the pose with the calculated pose change, transform the current laser scans to the new pose, and update the map with the transformed scans.
+$$
+\sum_{i=1}^{n}
+\left[
+1-M(\mathbf{S}_i(\boldsymbol{\xi}))
+-\nabla M(\mathbf{S}_i(\boldsymbol{\xi}))
+\frac{\partial\mathbf{S}_i(\boldsymbol{\xi})}{\partial\boldsymbol{\xi}}
+\Delta\boldsymbol{\xi}
+\right]^2
+\rightarrow 0
+$$
+
+This turns the nonlinear alignment problem into a local linear approximation. **Gauss-Newton solves this approximation to calculate a $\Delta\boldsymbol{\xi}$ that reduces the alignment error.**
+
+We update the pose:
+
+$$
+\boldsymbol{\xi}_{new}=\boldsymbol{\xi_{old}}+\Delta\boldsymbol{\xi}
+$$
+
+This process is repeated: after updating the pose, we linearize again around the new pose and calculate a new $\Delta\boldsymbol{\xi}$. This continues until the alignment error is sufficiently small.
 
 ![Hector SLAM Gauss-Newton Derivation](/assets/module-c/lecture-8/hector-gauss-newton.png)
 
@@ -176,10 +269,21 @@ The occupancy grid does **not** assign a wall or free space from a single scan, 
 
 After every few laser scans, once the map is confident about a chunk of cells, it gets published as the occupancy map.
 
-### Multi-Resolution Map Representation
-This kind of optimization can get stuck in **local minima**. To avoid this, rather than using a single occupancy grid, the equation is optimized first over coarser maps, and that estimate is fed as the input to the optimization over the higher-resolution map.
+> **Note:** The map is used for scan matching even when it is still uncertain. As more LiDAR measurements accumulate, the probabilities provide stronger evidence about which cells are actually occupied or free.
 
-Example: with a target resolution of 5 cm and 3 multi-resolution grids, the algorithm iterates over grids of **20 cm → 10 cm → 5 cm**. The pose update from the 20 cm grid is the input to the 10 cm grid, and so on.
+### Multi-Resolution Maps
+
+The optimization can get stuck in a **local minimum**: a pose where the alignment error is low, but it is **not the best possible alignment**.
+
+To reduce this risk, Hector SLAM uses multiple versions of our **occupancy map**, each with a different resolution. A **coarser map** uses larger grid cells, which smooths out small details and makes it easier to find the general alignment.
+
+The optimization proceeds from coarse to fine:
+
+$$
+20\text{ cm} \rightarrow 10\text{ cm} \rightarrow 5\text{ cm}
+$$
+
+The pose found using the 20 cm map is used as the starting point for the 10 cm map, which is then refined using the 5 cm map.
 
 ![Multi-Resolution Map Representation](/assets/module-c/lecture-8/multi-resolution-map.png)
 
@@ -214,35 +318,19 @@ Hector odometry provides the transform between the odom frame and the base frame
 - `map_update_distance_thresh`: minimum distance travelled before a map update
 - `map_update_angle_thresh`: minimum angle travelled before a map update
 - `laser_max_dist`: laser sensor specification
-- `update_factor_free`: log odds probability for free cells
-- `update_factor_occupied`: log odds probability for occupied cells
+- `update_factor_free`: factor controlling the **log-odds update strength** when updating free cells
+- `update_factor_occupied`: factor controlling the **log-odds update strength** when updating occupied cells
 
 ## Localization with Odometry
 
-### First Attempt: Motion Integration
-**Odometry:** start at a known pose and integrate control and motion measurements to estimate the current pose.
-- Integrate dynamics using information from the VESC, wheel encoders, IMU, etc.
-- Odometry = **open loop estimation** = error increases over time
+### Motion Integration
 
-By measuring the number of rotations on the left and right wheels we can calculate the distance travelled from an initial position and predict the car's pose with *some* certainty. But as it integrates distance over time, error keeps accumulating and the odometry drifts.
+Odometry: estimates pose by integrating motion measurements from wheel encoders, IMU, VESC, etc. Small errors accumulate over time, causing odometry drift.
 
-Walking through it: start at a known pose → uncertainty grows with every step → eventually you are **no longer able to determine the correct position**.
-
-![Odometry Drift](/assets/module-c/lecture-8/odometry-drift.png)
+Flow: known pose → integrate motion → errors accumulate → inaccurate pose.
 
 ### Wheel Spin Due to Lack of Traction
 Wheel-encoder-based odometry does not account for **wheel slippage**, which is very common on high-speed platforms. Due to the high torque of the motors, the wheels spin in place before the car actually starts to move. The odometry believes the car has moved even though the wheel is spinning in the same location, yielding an incorrect pose.
-
-![Wheel Slip](/assets/module-c/lecture-8/wheel-slip.png)
-
-### Mapping with Odometry Meets Reality
-- Motion is noisy, we cannot ignore it
-- Assuming known poses fails
-- Often, the sensor itself is rather precise
-
-An open-loop run with no feedback (IMU + wheel encoders only) produces a badly distorted building layout.
-
-![Mapping with Odometry Meets Reality](/assets/module-c/lecture-8/mapping-with-odometry-reality.png)
 
 ### Scan Matching Also Fails Alone
 Scan-matching-based odometry can fail to record movement down a long corridor because consecutive scans are nearly identical. It only realizes the movement once a prominently different scan appears at a turn.
@@ -253,50 +341,19 @@ We need:
 2. A solution robust enough to compensate for a lack of information on the initial position, handling inaccuracies in the initial pose
 
 **Solution: Monte Carlo Localization** (uses histograms / sample sets)
+
 **Alternate solutions:** Kalman Filter (uses Gaussians to track position), Topological Markov Localization
 
-### Pose Correction using Scan Matching
-Maximize the observation likelihood of the current pose relative to the previous pose and the map, combining the **sensor observation model** with the **motion odometry model**.
-
-## Particle Filter: Intuition (1D Example)
-
-Setup: a robot moving in one dimension along a corridor with a few doors. It senses only doors, and has odometry telling it how far it moved.
-
-### Belief State
-Initially the robot has no information about where it is. The graph of position (x-axis) versus probability of being there is the **belief state**: the probability of the robot being at that particular position.
-
-### $t = 1$: Sense a Door
-The robot senses a door. The probability of receiving this sensor measurement along the corridor is $p(z \mid x)$, where $z$ is the sensor measurement (door or not) and $x$ is the position. This is the **measurement model**.
-
-### Belief State Update
-Combining the measurement model with the prior gives the **posterior belief**:
-- The robot has an increased belief of being next to a door (bumps at each door)
-- There is still a residual probability of being in the places between the bumps
-
-![Belief State Measurement Update](/assets/module-c/lecture-8/belief-state-measurement-update.png)
-
-### $t = 2$: Move Forward
-Update the belief state by shifting it forward the same distance, with some added noise to account for odometry error. This is the **motion update** of the belief state.
-
-Since robot motion is uncertain, the bumps come out **flatter** than before.
-
-### Measurement Update Again
-Sense a door again (now the 2nd door). Convolving this measurement with the previous belief state gives a new belief state with a high probability of being near door 2.
-
-**At this point the robot has localized itself.**
-
-![Belief State After Localizing](/assets/module-c/lecture-8/belief-state-localized.png)
-
 ### From Continuous to Discrete
-The belief state is a distribution that focuses most of its weight onto the correct hypothesis. But using it as a continuous function is computationally expensive.
+A continuous belief distribution is computationally expensive, so it is approximated using discrete particles.
 
-Instead it is **sampled** into discrete points. Each sample position is called a **particle**. The entire belief state becomes a discrete set of particle positions, each associated with the probability of the robot being at that position.
+Each particle represents a possible robot position.
+Particles are denser where probability is higher.
+Each particle has a weight representing the probability of that position.
 
-Where the probability is higher (near the middle door), the particles are drawn more densely. Each drawn particle carries a **weight** equal to the probability of the belief state at that location.
+> More details on Particle Filters can be found in [Lecture 7](/notes/LECTURE-7.md#particle-filter).
 
-![Belief State as Discrete Particles](/assets/module-c/lecture-8/belief-state-discrete-particles.png)
-
-## Particle Filter in 2D
+## Particle Filter
 
 Using a map previously generated with Hector mapping, where black pixels are walls and grey pixels are free space:
 
@@ -319,11 +376,7 @@ $$
 
 This equation **counts the number of wall pixels that overlap** between the scan and the map.
 
-![Scan Correlation Formula](/assets/module-c/lecture-8/scan-correlation-formula.png)
-
 Repeat for each particle and record the correlation score. Particles that align well with the map get a high correlation score. The particle with the **maximum weight** is chosen as the pose of the robot at the current state.
-
-![Scan Correlation Weights](/assets/module-c/lecture-8/scan-correlation-weights.png)
 
 The drift in the odometry pose is visibly corrected by the particle filter.
 
@@ -347,18 +400,9 @@ This tracks how well each particle performs over time, so more particles can be 
 
 ## Resampling
 
-Because weights are multiplied over iterations, particles with small weights shrink to a very small value over time, leaving the filter with effectively very few useful particles. Only a few particles become prominent.
+Repeated weight updates can cause particle depletion, where only a few particles retain significant weight.
 
-To avoid this, **resample** the particles when the effective particle count becomes too few, and reset all the weights.
-
-How it works:
-- Start with an initial set of particles drawn from the distribution
-- As they propagate, their weights change and a few become dominant (larger size = larger weight)
-- When those weights get very large, the particles must be resampled
-- Resampling draws **more particles close to the particles with higher weight**, so the new particle set has higher density near where the high-weight particles were
-- All new particles are drawn with the **same weight**, so the particle filter begins from scratch
-
-![Resampling](/assets/module-c/lecture-8/resampling.png)
+Resampling: redraw particles proportional to their weights, concentrating them around high-probability regions and resetting their weights equally.
 
 ## KLD Sampling and AMCL
 
@@ -369,10 +413,8 @@ This form of localization is computationally expensive because the correlation m
 - As the car moves, the particles converge and the cloud shrinks
 - KLD sampling culls redundant particles and improves performance
 
-![KLD Sampling](/assets/module-c/lecture-8/kld-sampling.png)
-
 Properties:
-- Variable particle size
+- Variable particle count
 - Sample size is proportional to the error between the odometry position and the sample-based approximation
 - i.e. smaller sample size once particles have converged
 
@@ -387,107 +429,26 @@ The AMCL package provides a transform to correct the drift in Hector odometry so
 
 ### Input and Output Parameters
 **Inputs:**
+
 1. Laser scan
 2. Dead reckoning / odometry source (Hector odometry)
 3. Pre-built map
 
 **Outputs:**
-4. AMCL pose: the corrected pose of our vehicle
-5. Particle cloud, for debugging
 
-## Particle Filters: Analysis
-
-### Problem Definition
-- Estimating the state of a dynamical system is a fundamental problem. Here, that means estimating the state of the vehicle within its environment
-- The **recursive Bayes filter** is an effective approach to estimate the belief about the state of a dynamical system
-  - How do we represent this belief in a probabilistic way?
-  - How do we maximize it?
-- Particle filters efficiently represent an **arbitrary (non-Gaussian)** distribution
-- Basic principle: use sampling to capture a discrete approximation of the belief set through a set of hypotheses (particles)
-  - A set of state hypotheses ("particles")
-  - **Survival of the fittest** to concentrate our finite particles so they better sample the arbitrary distribution of the belief
-
-### Starting with the Bayes Filter
-The key idea of Bayes filtering is to estimate a probability density over the state space conditioned on the data. This posterior is called the **belief**:
-
-$$
-Bel(x_t) = p(x_t \mid d_{0 \dots t})
-$$
-
-- $x_t$: robot state at time $t$
-- $d_{0 \dots t}$: the data from time 0 to $t$
-
-Bayes filters assume the environment is **Markov**: past and future data are conditionally independent if one knows the current state.
-
-For mobile robots we distinguish two types of data: **perceptual** data such as laser range measurements ($o$ for observation), and **odometry** data carrying information about robot motion ($a$ for action):
-
-$$
-Bel(x_t) = p(x_t \mid o_t, a_{t-1}, \dots, o_0)
-$$
-
-### Observation Update
-Use Bayes rule, $p(A \mid B) = \dfrac{p(B \mid A)p(A)}{p(B)}$, to rewrite the belief:
-
-$$
-Bel(x_t) = \frac{p(o_t \mid x_t, a_{t-1}, \dots, o_0)\,p(x_t \mid a_{t-1}, \dots, o_0)}{p(o_t \mid a_{t-1}, \dots, o_0)}
-$$
-
-$$
-Bel(x_t) = \eta\, p(o_t \mid x_t, a_{t-1}, \dots, o_0)\, p(x_t \mid a_{t-1}, \dots, o_0)
-$$
-
-![Observation Update](/assets/module-c/lecture-8/observation-update.png)
-
-### Markov Assumption
-Bayes filters rest on the assumption that future data is independent of past data given knowledge of the current state. Using it, the belief based on the last perceptual measurement simplifies to:
-
-$$
-Bel(x_t) = \eta\, p(o_t \mid x_t)\, p(x_t \mid a_{t-1}, \dots, o_0)
-$$
-
-### Odometry Update
-What if we just received an odometry measurement instead?
-
-$$
-Bel(x_t) = p(x_t \mid x_{t-1}, a_{t-1}, \dots, o_0)
-$$
-
-Rewrite via the **Law of Total Probability**:
-
-$$
-Bel(x_t) = \int p(x_t \mid x_{t-1}, a_{t-1}, \dots, o_0)\, p(x_{t-1} \mid a_{t-1}, \dots, o_0)\, dx_{t-1}
-$$
-
-Apply the Markov assumption:
-
-$$
-Bel(x_t) = \int p(x_t \mid x_{t-1}, a_{t-1})\, Bel(x_{t-1})\, dx_{t-1}
-$$
-
-![Odometry Update](/assets/module-c/lecture-8/odometry-update.png)
-
-### Bayes Recursive Filter
-After simplification, both steps combine into:
-
-$$
-Bel(x_t) = \eta\, p(o_t \mid x_t) \int p(x_t \mid x_{t-1}, a_{t-1})\, Bel(x_{t-1})\, dx_{t-1}
-$$
-
-Read it **right to left**:
-- **Previous Belief** $Bel(x_{t-1})$: draw your particles with replacement according to importance weight
-- **Transition / Motion Model** $p(x_t \mid x_{t-1}, a_{t-1})$: simulate noisy dynamics of particles based on control input
-- The **integral**: integrate out over previous beliefs (in practice a finite approximation)
-- **Observation Likelihood / Sensor Model** $p(o_t \mid x_t)$: compute how likely your measurements were given the updated particles
-- **Normalization Constant** $\eta$: make sure everything adds up to 1
-
-In practice we represent the distributions **non-parametrically** using particles (a finite set of samples).
-
-![Bayes Recursive Filter](/assets/module-c/lecture-8/bayes-recursive-filter.png)
+1. AMCL pose: the corrected pose of our vehicle
+2. Particle cloud, for debugging
 
 ## Why Samples
 
 ### Gaussian Filters Are Limited
-The Kalman filter and its variants can only model **Gaussian** distributions. The goal is an approach for dealing with **arbitrary** distributions.
+
+Kalman filters are limited because they:
+
+* Assume a **Gaussian** belief distribution.
+* Cannot naturally represent **multiple distinct hypotheses**.
+* Require a reasonably **known initial position**.
+* Struggle with highly **nonlinear or non-Gaussian** situations.
 
 ### Key Idea: Weighted Samples
 Use multiple **weighted** samples to represent arbitrary distributions.
@@ -497,63 +458,6 @@ Use multiple **weighted** samples to represent arbitrary distributions.
 **Particles for approximation:** the more particles fall into a region, the higher the probability of that region.
 
 ![Weighted Samples](/assets/module-c/lecture-8/weighted-samples.png)
-
-### Importance Sampling Principle
-Closed-form sampling is only possible for a few distributions (e.g. Gaussian). To sample from others:
-
-- We can use a different distribution $\pi$ to generate samples from $f$
-- Account for the "differences between $\pi$ and $f$" using a weight:
-
-$$
-\omega = \frac{f(x)}{\pi(x)}
-$$
-
-- **Target distribution:** $f$
-- **Proposal distribution:** $\pi$
-- **Pre-condition:** $f(x) > 0 \rightarrow \pi(x) > 0$
-
-![Importance Sampling Principle](/assets/module-c/lecture-8/importance-sampling.png)
-
-### Particle Filter for Dynamic State Estimation
-- Recursive Bayes filter
-- Non-parametric approach
-- Models the distribution by samples
-- **Prediction:** draw from the proposal
-- **Correction:** weighting by the ratio of target and proposal
-
-The more samples we use, the better the estimate.
-
-## Particle Filter Algorithm
-
-1. **Sample** the particles using the proposal distribution:
-
-$$
-x_t^{[j]} \sim proposal(x_t \mid \dots)
-$$
-
-2. **Compute the importance weights:**
-
-$$
-w_t^{[j]} = \frac{target(x_t^{[j]})}{proposal(x_t^{[j]})}
-$$
-
-3. **Resampling:** draw sample $i$ with probability $w_t^{[i]}$ and repeat $J$ times
-
-![Particle Filter Algorithm](/assets/module-c/lecture-8/particle-filter-algorithm.png)
-
-The three steps map onto: **Prediction Step → Correction Step → Re-sampling Step**, taking as input the old sample set, controls, and observations.
-
-### Monte Carlo Localization
-- Each particle is a **pose hypothesis**
-- The **proposal** is the motion model
-- **Correction** is via the observation model
-
-### Resampling Restated
-- Draw sample $i$ with probability $w^{[i]}$, repeat $J$ times
-- Informally: "replace unlikely samples by more likely ones"
-- **Survival of the fittest**
-- A "trick" to avoid many samples covering unlikely states
-- Needed because we have a limited number of samples
 
 ### Global Localization Walkthrough
 Starting from initialization with **10,000 particles** spread over the whole map, the loop is:
@@ -567,10 +471,10 @@ Over these cycles the particle cloud collapses from covering the entire map down
 ## Tuning Particle Filters
 
 Find these in `localize.launch`:
-- **Number of Particles:** 250-10000
-- **Angle Step:** downsamples the range measurements
-- **Squash factor:** smooths particle weights
-- **Max range:** 10-30 meters, good for getting rid of useless measurements with no returns, floor, etc.
+- **Number of Particles:** 250–10000 particles used for localization.
+- **Angle Step:** controls how many LiDAR measurements are skipped when processing a scan; larger step → fewer measurements.
+- **Squash factor:** smooths particle weights to reduce extreme differences between particles.
+- **Max range:** 10–30 m. Longer ranges can help early localization by capturing more unique scene features, while shorter ranges reduce noisy/useless measurements such as floor returns or missing returns.
 - **Method:** use RM-GPU
 
 ### ROS: Map Server
