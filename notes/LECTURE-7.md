@@ -1,6 +1,6 @@
 # Lecture 7 Notes
 
-**Lecture 7:** https://youtu.be/kQi5IGzvr0c?si=89jK2Q1ja-OfM-Ym
+**Lecture 7:** https://youtu.be/kQi5IGzvr0c?si=89jK2Q1ja-OfM-Ym & https://youtu.be/SRBdpoPl57Q?t=1266 from time 21:05
 
 ## Localization and Mapping: Introduction to Bayes Filter
 
