@@ -8,10 +8,7 @@ Lesson plan:
 1. Map making with Hector SLAM
 2. Particle Filter Localization
 3. Adaptive Monte Carlo Localization (AMCL)
-4. Recursive Bayes Filtering used in AMCL
-5. Tuning Particle Filters in ROS
-
-The lecture runs in two passes: **Intuition** first, then **Analysis**.
+4. Tuning Particle Filters in ROS
 
 ## Why We Need a Map
 
@@ -326,30 +323,14 @@ Hector odometry provides the transform between the odom frame and the base frame
 
 ## Localization with Odometry
 
-### First Attempt: Motion Integration
-**Odometry:** start at a known pose and integrate control and motion measurements to estimate the current pose.
-- Integrate dynamics using information from the VESC, wheel encoders, IMU, etc.
-- Odometry = **open loop estimation** = error increases over time
+### Motion Integration
 
-By measuring the number of rotations on the left and right wheels we can calculate the distance travelled from an initial position and predict the car's pose with *some* certainty. But as it integrates distance over time, error keeps accumulating and the odometry drifts.
+Odometry: estimates pose by integrating motion measurements from wheel encoders, IMU, VESC, etc. Small errors accumulate over time, causing odometry drift.
 
-Walking through it: start at a known pose → uncertainty grows with every step → eventually you are **no longer able to determine the correct position**.
-
-![Odometry Drift](/assets/module-c/lecture-8/odometry-drift.png)
+Flow: known pose → integrate motion → errors accumulate → inaccurate pose.
 
 ### Wheel Spin Due to Lack of Traction
 Wheel-encoder-based odometry does not account for **wheel slippage**, which is very common on high-speed platforms. Due to the high torque of the motors, the wheels spin in place before the car actually starts to move. The odometry believes the car has moved even though the wheel is spinning in the same location, yielding an incorrect pose.
-
-![Wheel Slip](/assets/module-c/lecture-8/wheel-slip.png)
-
-### Mapping with Odometry Meets Reality
-- Motion is noisy, we cannot ignore it
-- Assuming known poses fails
-- Often, the sensor itself is rather precise
-
-An open-loop run with no feedback (IMU + wheel encoders only) produces a badly distorted building layout.
-
-![Mapping with Odometry Meets Reality](/assets/module-c/lecture-8/mapping-with-odometry-reality.png)
 
 ### Scan Matching Also Fails Alone
 Scan-matching-based odometry can fail to record movement down a long corridor because consecutive scans are nearly identical. It only realizes the movement once a prominently different scan appears at a turn.
@@ -360,50 +341,19 @@ We need:
 2. A solution robust enough to compensate for a lack of information on the initial position, handling inaccuracies in the initial pose
 
 **Solution: Monte Carlo Localization** (uses histograms / sample sets)
+
 **Alternate solutions:** Kalman Filter (uses Gaussians to track position), Topological Markov Localization
 
-### Pose Correction using Scan Matching
-Maximize the observation likelihood of the current pose relative to the previous pose and the map, combining the **sensor observation model** with the **motion odometry model**.
-
-## Particle Filter: Intuition (1D Example)
-
-Setup: a robot moving in one dimension along a corridor with a few doors. It senses only doors, and has odometry telling it how far it moved.
-
-### Belief State
-Initially the robot has no information about where it is. The graph of position (x-axis) versus probability of being there is the **belief state**: the probability of the robot being at that particular position.
-
-### $t = 1$: Sense a Door
-The robot senses a door. The probability of receiving this sensor measurement along the corridor is $p(z \mid x)$, where $z$ is the sensor measurement (door or not) and $x$ is the position. This is the **measurement model**.
-
-### Belief State Update
-Combining the measurement model with the prior gives the **posterior belief**:
-- The robot has an increased belief of being next to a door (bumps at each door)
-- There is still a residual probability of being in the places between the bumps
-
-![Belief State Measurement Update](/assets/module-c/lecture-8/belief-state-measurement-update.png)
-
-### $t = 2$: Move Forward
-Update the belief state by shifting it forward the same distance, with some added noise to account for odometry error. This is the **motion update** of the belief state.
-
-Since robot motion is uncertain, the bumps come out **flatter** than before.
-
-### Measurement Update Again
-Sense a door again (now the 2nd door). Convolving this measurement with the previous belief state gives a new belief state with a high probability of being near door 2.
-
-**At this point the robot has localized itself.**
-
-![Belief State After Localizing](/assets/module-c/lecture-8/belief-state-localized.png)
-
 ### From Continuous to Discrete
-The belief state is a distribution that focuses most of its weight onto the correct hypothesis. But using it as a continuous function is computationally expensive.
+A continuous belief distribution is computationally expensive, so it is approximated using discrete particles.
 
-Instead it is **sampled** into discrete points. Each sample position is called a **particle**. The entire belief state becomes a discrete set of particle positions, each associated with the probability of the robot being at that position.
+Each particle represents a possible robot position.
+Particles are denser where probability is higher.
+Each particle has a weight representing the probability of that position.
 
-Where the probability is higher (near the middle door), the particles are drawn more densely. Each drawn particle carries a **weight** equal to the probability of the belief state at that location.
+> More details on Particle Filters can be found in [Lecture 7](/notes/LECTURE-7.md#particle-filter).
 
-![Belief State as Discrete Particles](/assets/module-c/lecture-8/belief-state-discrete-particles.png)
-
-## Particle Filter in 2D
+## Particle Filter
 
 Using a map previously generated with Hector mapping, where black pixels are walls and grey pixels are free space:
 
@@ -426,11 +376,7 @@ $$
 
 This equation **counts the number of wall pixels that overlap** between the scan and the map.
 
-![Scan Correlation Formula](/assets/module-c/lecture-8/scan-correlation-formula.png)
-
 Repeat for each particle and record the correlation score. Particles that align well with the map get a high correlation score. The particle with the **maximum weight** is chosen as the pose of the robot at the current state.
-
-![Scan Correlation Weights](/assets/module-c/lecture-8/scan-correlation-weights.png)
 
 The drift in the odometry pose is visibly corrected by the particle filter.
 
@@ -454,18 +400,9 @@ This tracks how well each particle performs over time, so more particles can be 
 
 ## Resampling
 
-Because weights are multiplied over iterations, particles with small weights shrink to a very small value over time, leaving the filter with effectively very few useful particles. Only a few particles become prominent.
+Repeated weight updates can cause particle depletion, where only a few particles retain significant weight.
 
-To avoid this, **resample** the particles when the effective particle count becomes too few, and reset all the weights.
-
-How it works:
-- Start with an initial set of particles drawn from the distribution
-- As they propagate, their weights change and a few become dominant (larger size = larger weight)
-- When those weights get very large, the particles must be resampled
-- Resampling draws **more particles close to the particles with higher weight**, so the new particle set has higher density near where the high-weight particles were
-- All new particles are drawn with the **same weight**, so the particle filter begins from scratch
-
-![Resampling](/assets/module-c/lecture-8/resampling.png)
+Resampling: redraw particles proportional to their weights, concentrating them around high-probability regions and resetting their weights equally.
 
 ## KLD Sampling and AMCL
 
@@ -476,10 +413,8 @@ This form of localization is computationally expensive because the correlation m
 - As the car moves, the particles converge and the cloud shrinks
 - KLD sampling culls redundant particles and improves performance
 
-![KLD Sampling](/assets/module-c/lecture-8/kld-sampling.png)
-
 Properties:
-- Variable particle size
+- Variable particle count
 - Sample size is proportional to the error between the odometry position and the sample-based approximation
 - i.e. smaller sample size once particles have converged
 
@@ -494,107 +429,26 @@ The AMCL package provides a transform to correct the drift in Hector odometry so
 
 ### Input and Output Parameters
 **Inputs:**
+
 1. Laser scan
 2. Dead reckoning / odometry source (Hector odometry)
 3. Pre-built map
 
 **Outputs:**
-4. AMCL pose: the corrected pose of our vehicle
-5. Particle cloud, for debugging
 
-## Particle Filters: Analysis
-
-### Problem Definition
-- Estimating the state of a dynamical system is a fundamental problem. Here, that means estimating the state of the vehicle within its environment
-- The **recursive Bayes filter** is an effective approach to estimate the belief about the state of a dynamical system
-  - How do we represent this belief in a probabilistic way?
-  - How do we maximize it?
-- Particle filters efficiently represent an **arbitrary (non-Gaussian)** distribution
-- Basic principle: use sampling to capture a discrete approximation of the belief set through a set of hypotheses (particles)
-  - A set of state hypotheses ("particles")
-  - **Survival of the fittest** to concentrate our finite particles so they better sample the arbitrary distribution of the belief
-
-### Starting with the Bayes Filter
-The key idea of Bayes filtering is to estimate a probability density over the state space conditioned on the data. This posterior is called the **belief**:
-
-$$
-Bel(x_t) = p(x_t \mid d_{0 \dots t})
-$$
-
-- $x_t$: robot state at time $t$
-- $d_{0 \dots t}$: the data from time 0 to $t$
-
-Bayes filters assume the environment is **Markov**: past and future data are conditionally independent if one knows the current state.
-
-For mobile robots we distinguish two types of data: **perceptual** data such as laser range measurements ($o$ for observation), and **odometry** data carrying information about robot motion ($a$ for action):
-
-$$
-Bel(x_t) = p(x_t \mid o_t, a_{t-1}, \dots, o_0)
-$$
-
-### Observation Update
-Use Bayes rule, $p(A \mid B) = \dfrac{p(B \mid A)p(A)}{p(B)}$, to rewrite the belief:
-
-$$
-Bel(x_t) = \frac{p(o_t \mid x_t, a_{t-1}, \dots, o_0)\,p(x_t \mid a_{t-1}, \dots, o_0)}{p(o_t \mid a_{t-1}, \dots, o_0)}
-$$
-
-$$
-Bel(x_t) = \eta\, p(o_t \mid x_t, a_{t-1}, \dots, o_0)\, p(x_t \mid a_{t-1}, \dots, o_0)
-$$
-
-![Observation Update](/assets/module-c/lecture-8/observation-update.png)
-
-### Markov Assumption
-Bayes filters rest on the assumption that future data is independent of past data given knowledge of the current state. Using it, the belief based on the last perceptual measurement simplifies to:
-
-$$
-Bel(x_t) = \eta\, p(o_t \mid x_t)\, p(x_t \mid a_{t-1}, \dots, o_0)
-$$
-
-### Odometry Update
-What if we just received an odometry measurement instead?
-
-$$
-Bel(x_t) = p(x_t \mid x_{t-1}, a_{t-1}, \dots, o_0)
-$$
-
-Rewrite via the **Law of Total Probability**:
-
-$$
-Bel(x_t) = \int p(x_t \mid x_{t-1}, a_{t-1}, \dots, o_0)\, p(x_{t-1} \mid a_{t-1}, \dots, o_0)\, dx_{t-1}
-$$
-
-Apply the Markov assumption:
-
-$$
-Bel(x_t) = \int p(x_t \mid x_{t-1}, a_{t-1})\, Bel(x_{t-1})\, dx_{t-1}
-$$
-
-![Odometry Update](/assets/module-c/lecture-8/odometry-update.png)
-
-### Bayes Recursive Filter
-After simplification, both steps combine into:
-
-$$
-Bel(x_t) = \eta\, p(o_t \mid x_t) \int p(x_t \mid x_{t-1}, a_{t-1})\, Bel(x_{t-1})\, dx_{t-1}
-$$
-
-Read it **right to left**:
-- **Previous Belief** $Bel(x_{t-1})$: draw your particles with replacement according to importance weight
-- **Transition / Motion Model** $p(x_t \mid x_{t-1}, a_{t-1})$: simulate noisy dynamics of particles based on control input
-- The **integral**: integrate out over previous beliefs (in practice a finite approximation)
-- **Observation Likelihood / Sensor Model** $p(o_t \mid x_t)$: compute how likely your measurements were given the updated particles
-- **Normalization Constant** $\eta$: make sure everything adds up to 1
-
-In practice we represent the distributions **non-parametrically** using particles (a finite set of samples).
-
-![Bayes Recursive Filter](/assets/module-c/lecture-8/bayes-recursive-filter.png)
+1. AMCL pose: the corrected pose of our vehicle
+2. Particle cloud, for debugging
 
 ## Why Samples
 
 ### Gaussian Filters Are Limited
-The Kalman filter and its variants can only model **Gaussian** distributions. The goal is an approach for dealing with **arbitrary** distributions.
+
+Kalman filters are limited because they:
+
+* Assume a **Gaussian** belief distribution.
+* Cannot naturally represent **multiple distinct hypotheses**.
+* Require a reasonably **known initial position**.
+* Struggle with highly **nonlinear or non-Gaussian** situations.
 
 ### Key Idea: Weighted Samples
 Use multiple **weighted** samples to represent arbitrary distributions.
@@ -604,63 +458,6 @@ Use multiple **weighted** samples to represent arbitrary distributions.
 **Particles for approximation:** the more particles fall into a region, the higher the probability of that region.
 
 ![Weighted Samples](/assets/module-c/lecture-8/weighted-samples.png)
-
-### Importance Sampling Principle
-Closed-form sampling is only possible for a few distributions (e.g. Gaussian). To sample from others:
-
-- We can use a different distribution $\pi$ to generate samples from $f$
-- Account for the "differences between $\pi$ and $f$" using a weight:
-
-$$
-\omega = \frac{f(x)}{\pi(x)}
-$$
-
-- **Target distribution:** $f$
-- **Proposal distribution:** $\pi$
-- **Pre-condition:** $f(x) > 0 \rightarrow \pi(x) > 0$
-
-![Importance Sampling Principle](/assets/module-c/lecture-8/importance-sampling.png)
-
-### Particle Filter for Dynamic State Estimation
-- Recursive Bayes filter
-- Non-parametric approach
-- Models the distribution by samples
-- **Prediction:** draw from the proposal
-- **Correction:** weighting by the ratio of target and proposal
-
-The more samples we use, the better the estimate.
-
-## Particle Filter Algorithm
-
-1. **Sample** the particles using the proposal distribution:
-
-$$
-x_t^{[j]} \sim proposal(x_t \mid \dots)
-$$
-
-2. **Compute the importance weights:**
-
-$$
-w_t^{[j]} = \frac{target(x_t^{[j]})}{proposal(x_t^{[j]})}
-$$
-
-3. **Resampling:** draw sample $i$ with probability $w_t^{[i]}$ and repeat $J$ times
-
-![Particle Filter Algorithm](/assets/module-c/lecture-8/particle-filter-algorithm.png)
-
-The three steps map onto: **Prediction Step → Correction Step → Re-sampling Step**, taking as input the old sample set, controls, and observations.
-
-### Monte Carlo Localization
-- Each particle is a **pose hypothesis**
-- The **proposal** is the motion model
-- **Correction** is via the observation model
-
-### Resampling Restated
-- Draw sample $i$ with probability $w^{[i]}$, repeat $J$ times
-- Informally: "replace unlikely samples by more likely ones"
-- **Survival of the fittest**
-- A "trick" to avoid many samples covering unlikely states
-- Needed because we have a limited number of samples
 
 ### Global Localization Walkthrough
 Starting from initialization with **10,000 particles** spread over the whole map, the loop is:
@@ -674,10 +471,10 @@ Over these cycles the particle cloud collapses from covering the entire map down
 ## Tuning Particle Filters
 
 Find these in `localize.launch`:
-- **Number of Particles:** 250-10000
-- **Angle Step:** downsamples the range measurements
-- **Squash factor:** smooths particle weights
-- **Max range:** 10-30 meters, good for getting rid of useless measurements with no returns, floor, etc.
+- **Number of Particles:** 250–10000 particles used for localization.
+- **Angle Step:** controls how many LiDAR measurements are skipped when processing a scan; larger step → fewer measurements.
+- **Squash factor:** smooths particle weights to reduce extreme differences between particles.
+- **Max range:** 10–30 m. Longer ranges can help early localization by capturing more unique scene features, while shorter ranges reduce noisy/useless measurements such as floor returns or missing returns.
 - **Method:** use RM-GPU
 
 ### ROS: Map Server
