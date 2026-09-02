@@ -77,7 +77,7 @@ Throughout using `ROS 2`, you may find this [workflow](/resources/WORKFLOW.md) d
 
 <hr style="border-top: 1px dotted #bbb; background: transparent;">
 
-3. Lecture 9
+3. [Lecture 9](https://docs.google.com/presentation/d/1F92eaq1z98yY0OkGX_mlp3luqChNwqkPMNsiXZcayqM/edit)
     - [Lecture 9 Notes](notes/LECTURE-9.md)
 
 <hr style="border-top: 1px dotted #bbb; background: transparent;">
