@@ -2,15 +2,6 @@
 
 ## Introduction to Graph-based SLAM
 
-Previously, with particle filters, we were **given a map**. Now we are not.
-
-Three related problems:
-- **Localization:** estimate the robot's poses given landmarks
-- **Mapping:** estimate the landmarks given the robot's poses
-- **SLAM:** estimate the robot's poses *and* the landmarks at the same time
-
-![SLAM Example](/assets/module-c/lecture-9/slam-example.png)
-
 Two families of approaches to SLAM:
 
 | | **Filtering** | **Smoothing** |
@@ -18,32 +9,28 @@ Two families of approaches to SLAM:
 | Methods | EKF, Particle Filter | Pose Graph Optimization |
 | Approach | Online state estimation as new measurements become available | Full trajectories estimated using the complete set of measurements |
 
-![Filtering vs. Smoothing](/assets/module-c/lecture-9/filtering-vs-smoothing.png)
-
 ## Problem Setting: SLAM
 
-The Simultaneous Localization and Mapping problem asks whether it is possible for a mobile robot placed at an **unknown location** in an **unknown environment** to incrementally build a consistent map of that environment while simultaneously determining its location within this map.
+**SLAM (Simultaneous Localization and Mapping)** is the problem of a robot in an **unknown environment** determining **where it is** while **building a map** at the same time.
 
-The conceptual breakthrough came with the realization that the combined mapping and localization problem, once formulated as a **single estimation problem**, was actually convergent.
+The key insight was to treat localization and mapping as a **single estimation problem**, meaning we estimate the robot's poses and the map together. This problem was shown to be **convergent**, meaning that with enough measurements, the estimates can settle toward a consistent solution.
 
-Correlations between landmarks, which most researchers had tried to minimize, were actually the critical part of the problem. On the contrary, the more these correlations grew, the better the solution.
+The robot's pose and map are **correlated** because measurements connect them. For example, if a LiDAR observation tells us something about the environment from a particular pose, changing that pose also changes where we believe the observed feature is. These correlations allow information to propagate through the system and help produce a more consistent estimate.
 
 ## Idea of Graph-Based SLAM
 
 - Use a **graph** to represent the problem
-- Every **node** in the graph corresponds to a pose of the robot during mapping (and its laser measurement)
-- Every **edge** between two nodes corresponds to a spatial constraint between them
-- Graph-Based SLAM: build the graph and find a node configuration that **minimizes the error** introduced by the constraints
+- Every **node** corresponds to a robot pose during mapping, along with its laser measurement
+- Every **edge** between two nodes represents a spatial constraint, meaning a measurement of how those two poses should be positioned relative to each other
+- Graph-Based SLAM builds the graph and finds the node configuration that **minimizes the error** in these constraints
 
 In a nutshell:
 1. Every node = a robot position + a laser measurement
-2. An edge between two nodes = a spatial constraint between them
-3. Once we have the graph, determine the most likely map by **correcting the nodes**
-4. Then render a map based on the known poses
+2. An edge between two nodes = a spatial constraint between the poses
+3. Optimize the graph to **correct the estimated poses** so they best satisfy all constraints
+4. Render the map using the corrected poses
 
 ![Graph-Based SLAM in a Nutshell](/assets/module-c/lecture-9/graph-based-slam-nutshell.png)
-
-![Graph SLAM Corrected Map](/assets/module-c/lecture-9/graph-slam-corrected-map.png)
 
 ### The Overall SLAM System
 An interplay of front-end and back-end:
@@ -53,50 +40,6 @@ An interplay of front-end and back-end:
 The map helps determine constraints by reducing the search space. The topic of this lecture is the **optimization** (back-end).
 
 ![SLAM Front-End and Back-End](/assets/module-c/lecture-9/slam-front-end-back-end.png)
-
-## A Toy Problem: Dead Reckoning with F1TENTH
-
-- Calculating the current position of a moving robot based on a previously determined position
-- In our case, the VESC determines the current ERPM of the motor and converts it into the vehicle's longitudinal velocity. The servo angle is used to determine the current steering angle
-- Using a basic kinematics model, the relative position of the car can be determined. This is **odometry**
-
-### Sensing the Environment
-Put the car in an unknown environment; it has no idea what is around it. The LiDAR gives range measurements that represent part of the environment.
-
-### In an Ideal World
-With no uncertainty or errors in the LiDAR or odometry measurements:
-- If odometry is perfectly accurate, and
-- if the LiDAR range measurements are perfectly accurate,
-- then we can use the relative movements to translate and rotate the sensor measurements accordingly, and piece together a map from them
-
-After a while we have built up a representation of the environment. Run the robot around longer, gather more measurements, and it becomes a true representation of the environment.
-
-![Ideal World Map](/assets/module-c/lecture-9/ideal-world-map.png)
-
-### But in the Real World
-This scenario is not realistic. There is error in both the LiDAR measurement and the odometry, so there is uncertainty in the estimated robot pose and in the distances to measured obstacles.
-
-- Odometry is not accurate (wheel slip, inaccuracy in measuring motor RPM, etc.)
-- The LiDAR scan, although pretty accurate, has noise in each measurement
-- This means our perfect-scenario map-making algorithm **breaks**
-
-![Real World Error](/assets/module-c/lecture-9/real-world-error.png)
-
-Walking through the failure:
-1. We get an initial LiDAR measurement and assume there is an obstacle there, just like before
-2. We drive a bit, except this time the **estimated pose differs from the real pose**
-3. The LiDAR returns correct relative distances to the wall the real robot sees, but we can only assume they are relative to the *estimated* pose, since that is all we know
-4. The mapping algorithm mistakenly puts the points in the wrong position using the wrong odometry
-5. This places the two measured obstacles in **different frames** rather than a global environment frame, so they do not line up
-6. Continuing around the room, the odometry error causes the estimated pose to deviate further and further from the real pose
-
-![Real World Drift](/assets/module-c/lecture-9/real-world-drift.png)
-
-The end result is a map of obstacles that does not resemble the real environment at all. Uncertainty in our system messes it up, and this is why we cannot just take measurements and stick the results into a map.
-
-![Real World Final Map](/assets/module-c/lecture-9/real-world-final-map.png)
-
-**This is where SLAM algorithms help.**
 
 ## SLAM Overview: Two Approaches
 
@@ -111,10 +54,19 @@ The end result is a map of obstacles that does not resemble the real environment
 - Use optimization for **loop closure** to correct pose estimations
 - Examples: **KartoSLAM**, **Cartographer**. We will be using `slam_toolbox`, also graph-based
 
-How it works:
-1. Store pose estimations and measurements in a pose graph, keeping the relative pose estimations as constraints **with confidence**
-2. A sensor matcher (a scan matcher, in our 2D LiDAR case) finds correspondence between nodes in the graph
+#### How it works:
+
+1. Store pose estimations and measurements in a **pose graph**, keeping the relative pose estimations as **constraints with confidence**
+   - For example, odometry might tell us that the robot moved 2 m forward from pose A to pose B.
+   - This becomes a constraint describing how A and B should be related, along with how much we trust that measurement.
+
+2. A **sensor matcher** (a scan matcher, in our 2D LiDAR case) finds **correspondences between nodes** in the graph
+   - It compares LiDAR scans to determine whether different poses observed the same environment.
+   - This can create additional constraints, such as **loop closures**.
+
 3. The constraints in the pose graph are adjusted **all at once** as an optimization problem, which corrects the estimation errors
+   - The optimizer adjusts the poses to find the configuration that best satisfies all the constraints together.
+   - This corrects errors such as accumulated **odometry drift**.
 
 ## Pose Graphs: Edge Constraints
 
