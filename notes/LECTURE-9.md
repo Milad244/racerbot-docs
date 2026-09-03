@@ -305,6 +305,7 @@ Relate pairs of poses from which observations have been recorded. This gives us 
 - Each $\mathbf{x}_i$ is a pose of the robot at time $t_i$
 - A constraint/edge exists between the nodes $\mathbf{x}_i$ and $\mathbf{x}_j$ if...
 
+
 **Create an edge if (1):** the robot moves from $\mathbf{x}_i$ to $\mathbf{x}_{i+1}$ → the edge corresponds to **odometry**, representing the odometry measurement.
 
 **Create an edge if (2):** the robot observes the same part of the environment from $\mathbf{x}_i$ and from $\mathbf{x}_j$ → construct a **virtual measurement** about the position of $\mathbf{x}_j$ seen from $\mathbf{x}_i$. The edge represents the position of $\mathbf{x}_j$ seen from $\mathbf{x}_i$ based on the observation.
@@ -313,6 +314,7 @@ Relate pairs of poses from which observations have been recorded. This gives us 
 
 ### Transformations
 Transformations can be expressed using **homogeneous coordinates**. Here, $\mathbf{x}_i$ is the robot's **pose**, and $\mathbf{X}_i$ is the **transformation matrix representing that pose**, which lets us mathematically combine poses and calculate the relative transformation between them:
+
 
 * **Odometry-based edge:** $(\mathbf{X}_i^{-1}\mathbf{X}_{i+1})$ → relative transformation from pose $i$ to pose $i+1$
 
@@ -334,8 +336,24 @@ Questions worth thinking about:
 
 ### The Pose Graph
 For an edge between nodes $\mathbf{x}_i$ and $\mathbf{x}_j$:
-- $\langle \mathbf{z}_{ij}, \boldsymbol{\Omega}_{ij} \rangle$: the edge — $\mathbf{z}_{ij}$ is the **measured** relative transform between $i$ and $j$ (computed once from scan matching or odometry, *before* optimization), and $\boldsymbol{\Omega}_{ij}$ is its information matrix (how much to trust this measurement)
-- $\mathbf{e}_{ij}(\mathbf{x}_i, \mathbf{x}_j)$: the **error** for this edge — the gap between what was *measured* ($\mathbf{z}_{ij}$) and what the *current pose estimates* $\mathbf{x}_i, \mathbf{x}_j$ imply the transform should be. Small error → the pose estimates agree with the sensor data; large error → they don't.
+
+* **Edge:**
+
+$$
+\langle \mathbf{z}_{ij}, \boldsymbol{\Omega}_{ij} \rangle
+$$
+
+
+  $\mathbf{z}_{ij}$ is the **measured** relative transform between $i$ and $j$ (computed once from scan matching or odometry, *before* optimization), and $\boldsymbol{\Omega}_{ij}$ is its information matrix (how much to trust this measurement)
+
+* **Error:**
+
+$$
+\mathbf{e}_{ij}(\mathbf{x}_i, \mathbf{x}_j)
+$$
+
+
+  The error for this edge — the gap between what was measured ($\mathbf{z}_{ij}$) and what the current pose estimates $x_i$, $x_j$ imply the transform should be.
 
 **Goal:** adjust all node poses simultaneously to minimize the total weighted error across every edge — each edge "pulls" its two poses toward agreeing with its measurement, in proportion to how trusted ($\boldsymbol{\Omega}_{ij}$) it is:
 
@@ -463,5 +481,11 @@ $$
 - **Loop closure** is what makes graph SLAM work. Recognizing a revisited place adds a constraint that, when the graph re-settles, corrects not just the current pose but the **entire past trajectory**
 - A wrong loop closure lands the optimization in the wrong equilibrium. It is better to miss a loop closure than to make a false one, and loop closure needs **absolute** environment measurements, not relative ones like IMU
 - Probabilistic occupancy grids beat binary ones because constant hit/miss updating eventually washes out false positives
-- Formally: minimize $\sum_{ij} \mathbf{e}_{ij}^T \boldsymbol{\Omega}_{ij} \mathbf{e}_{ij}$, an overdetermined least squares problem solved via Sparse Pose Adjustment with Levenberg-Marquardt
+- **Formally:**
+
+$$
+\min \sum_{ij} \mathbf{e}_{ij}^T \boldsymbol{\Omega}_{ij} \mathbf{e}_{ij}
+$$
+
+an overdetermined least squares problem solved via Sparse Pose Adjustment with Levenberg-Marquardt.
 - Graph-based SLAM is **sensor and scan-matcher agnostic**. It only needs one sensor for relative transformations and one for absolute environment observation
