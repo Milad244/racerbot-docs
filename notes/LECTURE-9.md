@@ -2,6 +2,14 @@
 
 ## Introduction to Graph-based SLAM
 
+Lesson plan:
+1. Two Approaches to SLAM: Filtering vs. Smoothing
+2. Graph-Based SLAM: Nodes, Edges, and the Spring Analogy
+3. Loop Closure and Pose Graph Optimization
+4. Formalizing SLAM: Full vs. Online SLAM, Why It's Hard
+5. Least Squares SLAM: Pose Graphs, Information Matrices, Sparse Pose Adjustment
+6. Scan Matching Methods (ICP, Correlative Scan Matching)
+
 Two families of approaches to SLAM:
 
 | | **Filtering** | **Smoothing** |
@@ -208,8 +216,6 @@ $$
 - $z_{1:T}$: observations (given)
 - $u_{1:T}$: controls (given)
 
-![SLAM Probabilistic Formulation](/assets/module-c/lecture-9/slam-probabilistic-formulation.png)
-
 In the graphical model, the **path and map are unknown** while the observations and controls are **observed**.
 
 ### Full SLAM vs. Online SLAM
@@ -247,8 +253,11 @@ We cannot uniquely identify landmarks, and wrong data associations lead to probl
 
 The **correspondence problem** is the problem of relating the identity of sensed things to other sensed things. Some SLAM algorithms assume landmark identity is known; others provide special mechanisms for estimating the correspondence of measured features to previously observed landmarks in the map. Estimating this correspondence is known as the **data association problem**, and it is one of the most difficult problems in SLAM.
 
-- The mapping between observations and the map is unknown
+- The mapping between sensor observations and landmarks in the map is unknown
 - Picking wrong data associations can have **catastrophic consequences (divergence)**
+
+> **Intuition:** Imagine driving through a building with many identical-looking hallways. You see a doorway and need to decide whether it is the **same doorway you saw before** or a different one. If you associate it with the wrong landmark, you create a **wrong constraint**, which can cause the estimated pose and map to become seriously distorted.
+
 
 ![SLAM is Hard: Data Association](/assets/module-c/lecture-9/slam-hard-data-association.png)
 
@@ -287,8 +296,7 @@ Relate pairs of poses from which observations have been recorded. This gives us 
 ## Least Squares SLAM
 
 ### Least Squares in General
-- An approach for computing a solution for an **overdetermined** system
-- "More equations than unknowns"
+- An approach for computing a solution for an **overdetermined** (more equations than unknowns) system
 - Minimizes the sum of the **squared errors** in the equations
 - A standard approach to a large set of problems
 
@@ -304,9 +312,11 @@ Relate pairs of poses from which observations have been recorded. This gives us 
 ![Create an Edge from Observation](/assets/module-c/lecture-9/create-edge-observation.png)
 
 ### Transformations
-Transformations can be expressed using **homogeneous coordinates**:
-- **Odometry-based edge:** $(\mathbf{X}_i^{-1}\mathbf{X}_{i+1})$
-- **Observation-based edge:** $(\mathbf{X}_i^{-1}\mathbf{X}_j)$, how node $i$ sees node $j$
+Transformations can be expressed using **homogeneous coordinates**. Here, $\mathbf{x}_i$ is the robot's **pose**, and $\mathbf{X}_i$ is the **transformation matrix representing that pose**, which lets us mathematically combine poses and calculate the relative transformation between them:
+
+* **Odometry-based edge:** $(\mathbf{X}_i^{-1}\mathbf{X}_{i+1})$ → relative transformation from pose $i$ to pose $i+1$
+
+* **Observation-based edge:** $(\mathbf{X}_i^{-1}\mathbf{X}_j)$ → relative transformation from pose $i$ to pose $j$, based on observing the same environment
 
 ### Homogeneous Coordinates
 - A system of coordinates used in **projective geometry**, an alternative representation of geometric objects and transformations
@@ -324,10 +334,10 @@ Questions worth thinking about:
 
 ### The Pose Graph
 For an edge between nodes $\mathbf{x}_i$ and $\mathbf{x}_j$:
-- $\langle \mathbf{z}_{ij}, \boldsymbol{\Omega}_{ij} \rangle$: the edge, the observation of $\mathbf{x}_j$ from $\mathbf{x}_i$, with its information matrix
-- $\mathbf{e}_{ij}(\mathbf{x}_i, \mathbf{x}_j)$: the **error** between the nodes according to the graph and the observation
+- $\langle \mathbf{z}_{ij}, \boldsymbol{\Omega}_{ij} \rangle$: the edge — $\mathbf{z}_{ij}$ is the **measured** relative transform between $i$ and $j$ (computed once from scan matching or odometry, *before* optimization), and $\boldsymbol{\Omega}_{ij}$ is its information matrix (how much to trust this measurement)
+- $\mathbf{e}_{ij}(\mathbf{x}_i, \mathbf{x}_j)$: the **error** for this edge — the gap between what was *measured* ($\mathbf{z}_{ij}$) and what the *current pose estimates* $\mathbf{x}_i, \mathbf{x}_j$ imply the transform should be. Small error → the pose estimates agree with the sensor data; large error → they don't.
 
-**Goal:**
+**Goal:** adjust all node poses simultaneously to minimize the total weighted error across every edge — each edge "pulls" its two poses toward agreeing with its measurement, in proportion to how trusted ($\boldsymbol{\Omega}_{ij}$) it is:
 
 $$
 \mathbf{x}^{*} = \arg\min_{\mathbf{x}} \sum_{ij} \mathbf{e}_{ij}^{T}\, \boldsymbol{\Omega}_{ij}\, \mathbf{e}_{ij}
@@ -340,6 +350,14 @@ This error function is exactly the form suited to **least squares error minimiza
 ## Sparse Pose Adjustment
 
 The task of pose-graph optimization is to seek a configuration of the nodes that **maximizes the likelihood of the measurements** encoded in the constraints. We use **Sparse Pose Adjustment (SPA)** to find the graph configuration.
+
+This is the same least squares problem from the pose graph:
+
+$$
+\mathbf{x}^*=\arg\min_{\mathbf{x}}\sum_{ij}e_{ij}^{\top}\Omega_{ij}e_{ij}
+$$
+
+SPA provides an efficient way to solve this optimization for a large, sparse pose graph.
 
 ### Measurement Equation
 For robot poses $c_i$ and $c_j$, the measurement equation (constraint, or offset) is:
@@ -358,7 +376,11 @@ $$
 e_{ij} \equiv \bar{z}_{ij} - h(c_i, c_j)
 $$
 
-- $\bar{z}_{ij}$: the measured offset between $c_i$ and $c_j$, from scan matching, with a **precision matrix** (the inverse of covariance)
+This compares the measured relative transformation with the relative transformation predicted by our current pose estimates.
+
+* $\bar z_{ij}$: the measured offset between $c_i,c_j$, from scan matching or odometry
+* $h(c_i,c_j)$: the relative transformation implied by the current poses
+* $e_{ij}$: how much the current poses violate this constraint
 
 ### Total Error
 
@@ -375,7 +397,7 @@ The optimal placement of each $c$ is found by **minimizing the total error**. Th
 ## Scan Matching Methods
 
 Graph-based SLAM is also **scan (sensor) matching method agnostic**:
-- ICP (what we learned in the scan matching lecture)
+- ICP
 - Scan-to-scan, Scan-to-map, Map-to-map
 - Feature-based
 - RANSAC for outlier rejection
@@ -428,12 +450,6 @@ $$
 - $T p_i$: points transformed into a common frame of reference
 
 ![Correlative Scan Matching Formula](/assets/module-c/lecture-9/correlative-scan-matching-formula.png)
-
-## Summary
-- **Mapping** is the task of modeling the environment
-- **Localization** means estimating the robot's pose
-- **SLAM** = simultaneous localization and mapping
-- Full SLAM vs. Online SLAM
 
 ## What's Next?
 - A natural step after creating a map is to localize the robot within a known map. We have done that already with the **Particle Filter**
