@@ -306,7 +306,7 @@ Relate pairs of poses from which observations have been recorded. This gives us 
 - A constraint/edge exists between the nodes $\mathbf{x}_i$ and $\mathbf{x}_j$ if...
 
 
-**Create an edge if (1):** the robot moves from $\mathbf{x}_i$ to $\mathbf{x}_{i + 1}$ → the edge corresponds to **odometry**, representing the odometry measurement.
+**Create an edge if (1):** the robot moves from $x_i$ to $x_{i+1}$ → the edge corresponds to **odometry**, representing the odometry measurement.
 
 **Create an edge if (2):** the robot observes the same part of the environment from $\mathbf{x}_i$ and from $\mathbf{x}_j$ → construct a **virtual measurement** about the position of $\mathbf{x}_j$ seen from $\mathbf{x}_i$. The edge represents the position of $\mathbf{x}_j$ seen from $\mathbf{x}_i$ based on the observation.
 
