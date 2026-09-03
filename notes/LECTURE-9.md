@@ -316,9 +316,9 @@ Relate pairs of poses from which observations have been recorded. This gives us 
 Transformations can be expressed using **homogeneous coordinates**. Here, $\mathbf{x}_i$ is the robot's **pose**, and $\mathbf{X}_i$ is the **transformation matrix representing that pose**, which lets us mathematically combine poses and calculate the relative transformation between them:
 
 
-* **Odometry-based edge:** $(\mathbf{X}_i^{-1}\mathbf{X}_{i+1})$ → relative transformation from pose $i$ to pose $i+1$
+- **Odometry-based edge:** $(\mathbf{X}_i^{-1}\mathbf{X}_{i+1})$ → relative transformation from pose $i$ to pose $i+1$
 
-* **Observation-based edge:** $(\mathbf{X}_i^{-1}\mathbf{X}_j)$ → relative transformation from pose $i$ to pose $j$, based on observing the same environment
+- **Observation-based edge:** $(\mathbf{X}_i^{-1}\mathbf{X}_j)$ → relative transformation from pose $i$ to pose $j$, based on observing the same environment
 
 ### Homogeneous Coordinates
 - A system of coordinates used in **projective geometry**, an alternative representation of geometric objects and transformations
@@ -344,7 +344,7 @@ $$
 $$
 
 
-  $\mathbf{z}_{ij}$ is the **measured** relative transform between $i$ and $j$ (computed once from scan matching or odometry, *before* optimization), and $\boldsymbol{\Omega}_{ij}$ is its information matrix (how much to trust this measurement)
+$\mathbf{z}_{ij}$ is the *  *measured** relative transform between $i$ and $j$ (computed once from scan matching or odometry, *before* optimization), and $\boldsymbol{\Omega}_{ij}$ is its information matrix (how much to trust this measurement)
 
 * **Error:**
 
