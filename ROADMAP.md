@@ -74,3 +74,42 @@ Throughout using `ROS 2`, you may find this [workflow](/resources/WORKFLOW.md) d
 
 2. [Lecture 8](https://www.youtube.com/watch?v=SRBdpoPl57Q)
     - [Lecture 8 Notes](notes/LECTURE-8.md)
+
+<hr style="border-top: 1px dotted #bbb; background: transparent;">
+
+3. [Lecture 9](https://docs.google.com/presentation/d/1F92eaq1z98yY0OkGX_mlp3luqChNwqkPMNsiXZcayqM/edit)
+    - [Lecture 9 Notes](notes/LECTURE-9.md)
+
+<hr style="border-top: 1px dotted #bbb; background: transparent;">
+
+4. Tutorial 5
+
+## Module D: Planning & Control
+
+1. Lecture 10
+
+<hr style="border-top: 1px dotted #bbb; background: transparent;">
+
+2. Lab 5
+
+<hr style="border-top: 1px dotted #bbb; background: transparent;">
+
+3. Lecture 11
+
+<hr style="border-top: 1px dotted #bbb; background: transparent;">
+
+4. Lab 6
+
+## Module E: Vision
+
+1. Lecture 12
+
+<hr style="border-top: 1px dotted #bbb; background: transparent;">
+
+2. Lecture 13
+
+<hr style="border-top: 1px dotted #bbb; background: transparent;">
+
+3. Lab 7
+
+## Module F: Special Topics

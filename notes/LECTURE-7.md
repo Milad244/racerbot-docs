@@ -450,6 +450,10 @@ $$
 p(x) \approx \sum_{i=1}^{n} w^{(i)}\,\delta(x-x^{(i)})
 $$
 
+**Two equivalent views of the same distribution:**
+- **PMF form:** just the list of (particle, weight) pairs — $P(X = x^{(i)}) = w^{(i)}$. This is what the particles actually store.
+- **Delta-sum form (above):** the same PMF rewritten as a function of continuous $x$, so it can be plugged into the Bayes filter equations, which are written for continuous $p(x)$.
+
 ![Sampling Methods](/assets/module-c/lecture-7/sampling-methods.png)
 
 ### Problem Setting
