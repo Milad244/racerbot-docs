@@ -26,7 +26,7 @@ The robot's pose and map are **correlated** because measurements connect them. F
 
 In a nutshell:
 1. Every node = a robot position + a laser measurement
-2. An edge between two nodes = a spatial constraint between the poses
+2. An edge between two nodes = a spatial constraint between the poses, such as an odometry constraint or loop closure constraint
 3. Optimize the graph to **correct the estimated poses** so they best satisfy all constraints
 4. Render the map using the corrected poses
 
@@ -68,11 +68,23 @@ The map helps determine constraints by reducing the search space. The topic of t
    - The optimizer adjusts the poses to find the configuration that best satisfies all the constraints together.
    - This corrects errors such as accumulated **odometry drift**.
 
+#### What is stored in the graph:
+
+* **Nodes:** store the robot's **pose estimates** and associated **LiDAR measurements/scans**.
+
+* **Edges:** store **relative pose constraints** between nodes. Different measurements can create different types of edges:
+
+  * **Odometry constraint:** connects consecutive poses and represents how the robot moved from one pose to the next.
+  * **Loop closure constraint:** connects two poses that are not necessarily consecutive when the sensor matcher recognizes that the robot has returned to a previously visited location.
+  * Each edge also stores the **confidence** in its constraint.
+
+* During optimization, the **nodes are adjusted** so that they best satisfy **all of these constraints together**, correcting errors such as **odometry drift**.
+
 ## Pose Graphs: Edge Constraints
 
-The first thing the robot does is take a measurement of the environment. That measurement is associated with the current estimated robot pose, and both go into the pose graph. So a pose is defined as an X and Y location and a rotation angle, saved along with the distances and angles to the sensed obstacles. There are also **uncertainties** associated with this pose entry.
+The robot takes a measurement and creates a **node** containing its **estimated pose** $(x, y, \theta)$ and **LiDAR scan**. The robot's movement between poses creates an **edge**, containing the **relative pose constraint** and its **uncertainty/confidence**.
 
-The robot drives a little, its estimated pose starts to deviate from the real pose, takes another measurement, and that combination is saved as the second entry.
+After moving, the robot creates another node, and this process continues as the robot builds the pose graph.
 
 ### The Spring Analogy
 There is a constraint on the relative distance between two poses. Ideally they stay exactly that far apart since that is our best estimate, but due to uncertainty in the odometry process, we might be better off moving these two poses relative to each other.
@@ -91,11 +103,7 @@ The strength of the rubber bar depends on **how confident we are in the distance
 
 Since this edge is created from odometry: the more confident you are in your odometry measurement, the stiffer the spring and the more resistant to change.
 
-![Edge Constraint Stiffness](/assets/module-c/lecture-9/edge-constraint-stiffness.png)
-
 The point is that we are creating the **edges** of the graph, modeling "tension" between nodes, so the nodes can be moved around to fit constraints we define later.
-
-> This is exactly the scan matching problem we have seen before.
 
 ### Nomenclature
 - The **poses are the nodes** of the graph
@@ -121,7 +129,7 @@ The **stiffness** of this spring is determined by your confidence in your sensor
 
 ![Loop Closure Tension](/assets/module-c/lecture-9/loop-closure-tension.png)
 
-Allowing this graph to **settle to equilibrium**, balancing all the forces the constraints impose, is the *optimization* part of pose graph optimization. This is **loop closure**: we solve for the tensions between each node to reach equilibrium, as an optimization problem.
+Allowing this graph to **settle to equilibrium**, balancing all the forces the constraints impose, is the *optimization* part of pose graph optimization. A **loop closure** provides an additional constraint when the robot recognizes a previously visited location. The optimizer then uses this new constraint, along with all the others, to adjust the poses and reach equilibrium.
 
 When the graph reaches equilibrium, the collected data looks a lot better and resembles the true environment.
 
@@ -141,7 +149,7 @@ This is the essential step in graph-based SLAM. It is what makes graph SLAM work
 ### Failure Modes
 - If you are **falsely confident** in making an association between observations and make a **wrong loop closure**, the optimization ends up in the **wrong equilibrium**
 - In fact, it is better to **miss** an actual loop closure than to make a wrong one
-- It is also important to use **absolute measurements** of the environment in the loop closure step. If you use a relative measurement like the IMU, you cannot really be sure whether a current state matches a past one
+- It is also important to use **absolute measurements** of the environment, such as **LiDAR scans**, in the loop closure step. If you use only a relative measurement like the IMU, you cannot really be sure whether a current state matches a past one.
 
 ## Storing the Data as a Map
 
