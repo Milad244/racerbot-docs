@@ -306,7 +306,7 @@ Relate pairs of poses from which observations have been recorded. This gives us 
 - A constraint/edge exists between the nodes $\mathbf{x}_i$ and $\mathbf{x}_j$ if...
 
 
-**Create an edge if (1):** the robot moves from $\mathbf{x}_i$ to $\mathbf{x}_{i+1}$ → the edge corresponds to **odometry**, representing the odometry measurement.
+**Create an edge if (1):** the robot moves from $\mathbf{x}_i$ to $\mathbf{x}_{i + 1}$ → the edge corresponds to **odometry**, representing the odometry measurement.
 
 **Create an edge if (2):** the robot observes the same part of the environment from $\mathbf{x}_i$ and from $\mathbf{x}_j$ → construct a **virtual measurement** about the position of $\mathbf{x}_j$ seen from $\mathbf{x}_i$. The edge represents the position of $\mathbf{x}_j$ seen from $\mathbf{x}_i$ based on the observation.
 
@@ -316,7 +316,7 @@ Relate pairs of poses from which observations have been recorded. This gives us 
 Transformations can be expressed using **homogeneous coordinates**. Here, $\mathbf{x}_i$ is the robot's **pose**, and $\mathbf{X}_i$ is the **transformation matrix representing that pose**, which lets us mathematically combine poses and calculate the relative transformation between them:
 
 
-- **Odometry-based edge:** $(\mathbf{X}_i^{-1}\mathbf{X}_{i+1})$ → relative transformation from pose $i$ to pose $i+1$
+- **Odometry-based edge:** $(\mathbf{X}_i^{-1}\mathbf{X}_{i + 1})$ → relative transformation from pose $i$ to pose $i+1$
 
 - **Observation-based edge:** $(\mathbf{X}_i^{-1}\mathbf{X}_j)$ → relative transformation from pose $i$ to pose $j$, based on observing the same environment
 
@@ -344,7 +344,7 @@ $$
 $$
 
 
-$\mathbf{z}_{ij}$ is the *  *measured** relative transform between $i$ and $j$ (computed once from scan matching or odometry, *before* optimization), and $\boldsymbol{\Omega}_{ij}$ is its information matrix (how much to trust this measurement)
+$\mathbf{z}_{ij}$ is the *measured* relative transform between $i$ and $j$ (computed once from scan matching or odometry, *before* optimization), and $\boldsymbol{\Omega}_{ij}$ is its information matrix (how much to trust this measurement)
 
 * **Error:**
 
