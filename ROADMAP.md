@@ -82,7 +82,8 @@ Throughout using `ROS 2`, you may find this [workflow](/resources/WORKFLOW.md) d
 
 <hr style="border-top: 1px dotted #bbb; background: transparent;">
 
-4. Tutorial 5
+4. [Tutorial 5](https://docs.google.com/presentation/d/1NSLurHQVMVvQxcS9Ak_V12aZkTbiSgpLeReDgo2snoU/edit?slide=id.p#slide=id.p)
+    - [Tutorial 5 Notes](notes/TUTORIAL-5.md)
 
 ## Module D: Planning & Control
 
