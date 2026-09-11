@@ -22,7 +22,7 @@ Install the required packages:
 sudo apt-get update
 sudo apt install ros-humble-slam-toolbox
 sudo apt install ros-humble-rviz2
-sudo apt-get install -y libogre1.12.10
+sudo apt-get install -y libogre1.12.10 # only if you get a related error
 ```
 
 **RViz2:** Make sure GUI forwarding is configured correctly for the Docker container. This can be a difficult setup because RViz2 requires OpenGL/GLX support. Additional display and library configuration may be required for RViz2 to run properly inside the container.
