@@ -16,13 +16,18 @@ Make sure the **odometry on your car is properly tuned** before running `slam_to
 
 ### Installing slam_toolbox
 
-Install the package using:
+Install the required packages:
 
 ```bash
-sudo apt install ros-foxy-slam-toolbox
+sudo apt-get update
+sudo apt install ros-humble-slam-toolbox
+sudo apt install ros-humble-rviz2
+sudo apt-get install -y libogre1.12.10
 ```
 
-> **Note:** The command above uses **ROS Foxy**. We use **Humble/Jazzy**, so the ROS distribution in the package name should be changed accordingly.
+**RViz2:** Make sure GUI forwarding is configured correctly for the Docker container. This can be a difficult setup because RViz2 requires OpenGL/GLX support. Additional display and library configuration may be required for RViz2 to run properly inside the container.
+
+> **Note:** The command above uses **ROS Humble**. We use **Humble/Jazzy**, so the ROS distribution in the package name should be changed accordingly.
 
 ### Launching slam_toolbox
 
@@ -32,6 +37,12 @@ Then launch **slam_toolbox**:
 
 ```bash
 ros2 launch slam_toolbox online_async_launch.py params_file:=path/to/ws/src/f1tenth_system/f1tenth_stack/config/f1tenth_online_async.yaml
+```
+
+> **Note:** The Docker simulator does not currently include `f1tenth_system`. The F1TENTH-specific config may be explored later. For now, use:
+
+```bash
+ros2 launch slam_toolbox online_async_launch.py
 ```
 
 ### Example
@@ -69,7 +80,7 @@ The **range_libc** library provides different algorithm implementations for **2D
 
 https://github.com/f1tenth/range_libc/tree/humble-devel
 
-### Installing range_libc
+### Installing `range_libc`
 
 Clone the repository:
 
@@ -78,11 +89,19 @@ cd path/to/ws/src
 git clone https://github.com/f1tenth/range_libc.git -b humble-devel
 ```
 
-Install the Python wrapper:
+Install Cython:
 
 ```bash
-cd range_libc/pywrapper
-WITH_CUDA=ON python setup.py install --user
+pip install Cython
+```
+
+For the Docker container, **CUDA is disabled**.
+
+Build `range_lib` without CUDA:
+
+```bash
+cd path/to/ws
+colcon build --packages-select range_lib --cmake-args -DWITH_CUDA=OFF
 ```
 
 ### Installing the Particle Filter
@@ -123,6 +142,8 @@ Build the workspace again:
 cd path/to/ws
 colcon build
 ```
+
+If you are not using a GPU, make sure `range_method` in `particle_filter/config/localize.yaml` is set to `rm`.
 
 Then source the workspace:
 
