@@ -87,7 +87,8 @@ Throughout using `ROS 2`, you may find this [workflow](/resources/WORKFLOW.md) d
 
 ## Module D: Planning & Control
 
-1. Lecture 10
+1. [Lecture 10](https://www.youtube.com/watch?v=x9s8J4ucgO0)
+    - [Lecture 10 Notes](notes/LECTURE-10.md)
 
 <hr style="border-top: 1px dotted #bbb; background: transparent;">
 
