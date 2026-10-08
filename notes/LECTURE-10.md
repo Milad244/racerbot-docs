@@ -216,7 +216,7 @@ $$
 
 1. Create a map using SLAM.
 2. Generate or record a set of waypoints.
-    - Drive the track with teleop while the particle filter runs, and save its pose estimates (e.g. to a CSV) as the waypoint list.
+    - Drive the track with teleop, or let a reactive method (e.g. follow-the-gap) drive it, while the particle filter runs. Save its pose estimates (e.g. to a CSV) as the waypoint list.
     - Later, waypoints can come from a global planner or an optimized raceline instead.
 3. Smooth and evenly space the path. Recorded poses are noisy and unevenly spaced, so fit a spline (e.g. `scipy.interpolate.splprep` / `splev`) and resample at a fixed spacing.
     - Optionally store a **target velocity at each waypoint** (a velocity lookup table).
