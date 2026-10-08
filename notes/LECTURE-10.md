@@ -196,7 +196,7 @@ For each new vehicle pose:
 * **Lookahead from speed.** Set $L$ with a constant P-gain on velocity, then clamp it:
 
 $$
-L = \text{clip}(k_v \, v,\; L_{\min},\; L_{\max})
+L = \text{clip}(k_v v,\; L_{\min},\; L_{\max})
 $$
 
 * $k_v$ is tuned. A faster car looks further ahead, so it steers more gently: the gain $2/L^2$ drops as $v$ rises.
