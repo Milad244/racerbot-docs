@@ -119,7 +119,8 @@ Set up and run `slam_toolbox` for 2D mapping, then configure and run the particl
 
 Introduces Pure Pursuit path tracking, including lookahead-based goal selection, curvature and steering control, speed-dependent tuning, ROS integration, and the limitations of the kinematic model.
 
-1. Lecture 10
+1. [Lecture 10](https://www.youtube.com/watch?v=x9s8J4ucgO0)
+    - [Lecture 10 Notes](notes/LECTURE-10.md)
 
 <hr style="border-top: 1px dotted #bbb; background: transparent;">
 

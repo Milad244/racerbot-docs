@@ -1,5 +1,7 @@
 # Lecture 9 Notes
 
+**Lecture 9:** https://docs.google.com/presentation/d/1F92eaq1z98yY0OkGX_mlp3luqChNwqkPMNsiXZcayqM/edit
+
 ## Introduction to Graph-based SLAM
 
 Lesson plan:
